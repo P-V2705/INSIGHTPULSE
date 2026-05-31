@@ -7,8 +7,7 @@
 ---
 
 ## Live Demo
-**Frontend:** `https://YOUR_SITE.netlify.app`  
-**API Docs:** Deploy backend separately — see [Backend Deployment](#backend-deployment)
+**Live Demo:** `https://YOUR_SITE.netlify.app` ← update after deployment
 
 ---
 
