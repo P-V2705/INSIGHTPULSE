@@ -152,11 +152,21 @@ def run_full_analysis(file_path: str, review_col: str = None,
     # --- Topics ---
     topics = simple_topic_model(reviews, n_topics=5)
 
+    # --- Quality Prediction (must come before summary) ---
+    avg_rating = None
+    if rating_col and rating_col in df_sample.columns:
+        avg_rating = df_sample[rating_col].dropna().mean()
+    quality = predict_quality(avg_compound, avg_rating)
+
+    # --- Rating distribution for chart ---
+    rating_dist = {}
+    if rating_col and rating_col in df_sample.columns:
+        rd = df_sample[rating_col].dropna().round().astype(int).value_counts().sort_index()
+        rating_dist = {str(k): int(v) for k, v in rd.items()}
+
     # --- Summary (concise structured consultation) ---
     dominant_emotion = max(emotion_distribution, key=emotion_distribution.get)
-    avg_rating_val = None
-    if rating_col and rating_col in df_sample.columns:
-        avg_rating_val = float(df_sample[rating_col].dropna().mean())
+    avg_rating_val = float(avg_rating) if avg_rating is not None else None
 
     ai_summary = build_concise_summary(
         total=total,
@@ -171,18 +181,6 @@ def run_full_analysis(file_path: str, review_col: str = None,
         fake_pct=round(fake_count / total * 100, 1),
         avg_rating=avg_rating_val,
     )
-
-    # --- Quality Prediction ---
-    avg_rating = None
-    if rating_col and rating_col in df_sample.columns:
-        avg_rating = df_sample[rating_col].dropna().mean()
-    quality = predict_quality(avg_compound, avg_rating)
-
-    # --- Rating distribution for chart ---
-    rating_dist = {}
-    if rating_col and rating_col in df_sample.columns:
-        rd = df_sample[rating_col].dropna().round().astype(int).value_counts().sort_index()
-        rating_dist = {str(k): int(v) for k, v in rd.items()}
 
     # --- Sentiment over time (index-based trend) ---
     chunk_size = max(1, total // 20)
