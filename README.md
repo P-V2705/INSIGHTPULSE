@@ -1,7 +1,7 @@
 # SentimentAI Platform
 ### Advanced AI-Powered Customer Sentiment Analysis System
 
-[![CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions)
+[![CI](https://github.com/P-V2705/INSIGHTPULSE/actions/workflows/ci.yml/badge.svg)](https://github.com/P-V2705/INSIGHTPULSE/actions)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/YOUR_BADGE_ID/deploy-status)](https://app.netlify.com)
 
 ---
@@ -49,9 +49,8 @@ npm run dev                    # http://localhost:3000
 
 ### Step 1 — Push to GitHub
 ```bash
-# In the project root:
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-git push -u origin main
+# Already done! Your repo is live at:
+# https://github.com/P-V2705/INSIGHTPULSE
 ```
 
 ### Step 2 — Connect Netlify
