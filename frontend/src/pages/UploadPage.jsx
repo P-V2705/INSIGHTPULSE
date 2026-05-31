@@ -10,12 +10,41 @@ import { uploadFile, checkFileInfo } from '../utils/api'
 import { useApp } from '../context/AppContext'
 import clsx from 'clsx'
 
-// Accept all supported formats — no size restriction in the dropzone
+// ── File format config ────────────────────────────────────────────────────────
 const ACCEPTED = {
-  'text/csv':                                                          ['.csv'],
-  'application/vnd.ms-excel':                                         ['.xls'],
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx'],
-  'application/json':                                                  ['.json'],
+  // Tabular
+  'text/csv':                                                           ['.csv'],
+  'application/vnd.ms-excel':                                          ['.xls'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+  // Semi-structured
+  'application/json':                                                   ['.json'],
+  // Documents
+  'application/pdf':                                                    ['.pdf'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'application/msword':                                                 ['.doc'],
+  // Plain text
+  'text/plain':                                                         ['.txt'],
+  'text/tab-separated-values':                                          ['.tsv'],
+}
+
+const FORMAT_GROUPS = [
+  { label: 'Tabular',   formats: ['.csv', '.xlsx', '.xls', '.tsv'],  color: 'text-brand-400 bg-brand-500/10 border-brand-500/20' },
+  { label: 'Document',  formats: ['.pdf', '.docx', '.doc'],           color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+  { label: 'Data',      formats: ['.json', '.txt'],                   color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+]
+
+// Icon by file type
+function FileIcon({ name }) {
+  const ext = name?.split('.').pop()?.toLowerCase()
+  const colors = {
+    pdf:  'text-red-400',
+    docx: 'text-blue-400', doc: 'text-blue-400',
+    xlsx: 'text-emerald-400', xls: 'text-emerald-400',
+    csv:  'text-brand-400',
+    json: 'text-amber-400',
+    txt:  'text-slate-400', tsv: 'text-slate-400',
+  }
+  return <FileText size={18} className={colors[ext] || 'text-brand-400'} />
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -151,7 +180,7 @@ export default function UploadPage() {
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-slate-100 mb-2">Upload Dataset</h1>
         <p className="text-slate-400">
-          Import your Kaggle review dataset — CSV, Excel, or JSON.
+          Import your review dataset — CSV, Excel, JSON, PDF, Word, TXT and more.
           <span className="ml-2 text-brand-400 font-medium">No file size limit.</span>
         </p>
       </div>
@@ -160,7 +189,7 @@ export default function UploadPage() {
       <div
         {...getRootProps()}
         className={clsx(
-          'border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200',
+          'border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200',
           isDragActive
             ? 'border-brand-500 bg-brand-500/5 scale-[1.01]'
             : 'border-slate-700 hover:border-brand-500/50 hover:bg-slate-900/50'
@@ -184,12 +213,19 @@ export default function UploadPage() {
                 <p className="text-slate-500 text-sm">or click to browse files</p>
               </div>
 
-              {/* Format badges */}
-              <div className="flex gap-2 flex-wrap justify-center">
-                {['.csv', '.xlsx', '.xls', '.json'].map(ext => (
-                  <span key={ext} className="px-2.5 py-1 bg-slate-800 rounded-lg text-xs text-slate-400 font-mono border border-slate-700">
-                    {ext}
-                  </span>
+              {/* Format groups */}
+              <div className="flex flex-col items-center gap-2 w-full max-w-md">
+                {FORMAT_GROUPS.map(({ label, formats, color }) => (
+                  <div key={label} className="flex items-center gap-2 w-full">
+                    <span className="text-xs text-slate-600 w-16 text-right shrink-0">{label}</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {formats.map(ext => (
+                        <span key={ext} className={`px-2 py-0.5 rounded-md text-xs font-mono border ${color}`}>
+                          {ext}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
 
@@ -209,7 +245,7 @@ export default function UploadPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-brand-500/10 flex items-center justify-center shrink-0">
-                <FileText size={18} className="text-brand-400" />
+                <FileIcon name={file.name} />
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-200 truncate max-w-xs">{file.name}</p>

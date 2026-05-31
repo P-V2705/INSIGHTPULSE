@@ -1,10 +1,11 @@
 """
-Dataset Processor — reads CSV/Excel/JSON, auto-detects review columns,
-cleans data, and prepares it for NLP analysis.
+Dataset Processor — reads CSV/Excel/JSON/PDF/Word/TXT/TSV,
+auto-detects review columns, cleans data, and prepares it for NLP analysis.
 """
 import pandas as pd
 import numpy as np
 import json
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -26,22 +27,128 @@ CATEGORY_COLUMN_HINTS = [
 ]
 
 
+def _load_pdf(file_path: str) -> pd.DataFrame:
+    """
+    Extract text from every page of a PDF.
+    Each page becomes one row with columns: page, text.
+    Tables inside the PDF are also extracted and merged.
+    """
+    import pdfplumber
+
+    rows = []
+    tables_found = []
+
+    with pdfplumber.open(file_path) as pdf:
+        for page_num, page in enumerate(pdf.pages, start=1):
+            # Try to extract structured tables first
+            for table in page.extract_tables():
+                if table and len(table) > 1:
+                    headers = [str(h).strip() if h else f"col_{i}"
+                               for i, h in enumerate(table[0])]
+                    for data_row in table[1:]:
+                        row_dict = {headers[i]: (str(v).strip() if v else "")
+                                    for i, v in enumerate(data_row) if i < len(headers)}
+                        row_dict["_source_page"] = page_num
+                        tables_found.append(row_dict)
+
+            # Plain text fallback
+            text = page.extract_text() or ""
+            text = text.strip()
+            if text:
+                rows.append({"page": page_num, "text": text})
+
+    # Prefer structured table data if found
+    if tables_found:
+        df = pd.DataFrame(tables_found)
+        # Drop mostly-empty columns
+        df = df.dropna(axis=1, thresh=max(1, len(df) // 2))
+        return df
+
+    if not rows:
+        raise ValueError("No text could be extracted from the PDF.")
+
+    return pd.DataFrame(rows)
+
+
+def _load_word(file_path: str) -> pd.DataFrame:
+    """
+    Extract text from a Word document (.docx / .doc).
+    Each paragraph becomes one row; tables are also extracted.
+    """
+    from docx import Document
+
+    doc = Document(file_path)
+    rows = []
+    tables_found = []
+
+    # Extract tables
+    for table in doc.tables:
+        if not table.rows:
+            continue
+        headers = [cell.text.strip() for cell in table.rows[0].cells]
+        for row in table.rows[1:]:
+            cells = [cell.text.strip() for cell in row.cells]
+            if any(cells):
+                row_dict = {headers[i]: cells[i] for i in range(min(len(headers), len(cells)))}
+                tables_found.append(row_dict)
+
+    if tables_found:
+        return pd.DataFrame(tables_found)
+
+    # Extract paragraphs
+    for i, para in enumerate(doc.paragraphs):
+        text = para.text.strip()
+        if text:
+            rows.append({"paragraph": i + 1, "text": text})
+
+    if not rows:
+        raise ValueError("No text could be extracted from the Word document.")
+
+    return pd.DataFrame(rows)
+
+
+def _load_txt(file_path: str) -> pd.DataFrame:
+    """
+    Load a plain text file.
+    Each non-empty line becomes one row with column 'text'.
+    """
+    for enc in ["utf-8", "latin-1", "cp1252"]:
+        try:
+            with open(file_path, "r", encoding=enc) as f:
+                lines = [l.strip() for l in f if l.strip()]
+            return pd.DataFrame({"text": lines})
+        except UnicodeDecodeError:
+            continue
+    raise ValueError("Could not decode text file.")
+
+
+def _load_tsv(file_path: str) -> pd.DataFrame:
+    """Load a tab-separated values file."""
+    for enc in ["utf-8", "latin-1", "cp1252"]:
+        try:
+            return pd.read_csv(file_path, sep="\t", encoding=enc, low_memory=False)
+        except UnicodeDecodeError:
+            continue
+    raise ValueError("Could not decode TSV file.")
+
+
 def load_dataset(file_path: str) -> pd.DataFrame:
-    """Load dataset from CSV, Excel, or JSON."""
+    """
+    Universal loader — dispatches to the correct reader based on extension.
+    Supports: CSV, Excel (.xlsx/.xls), JSON, PDF, Word (.docx/.doc), TXT, TSV.
+    """
     path = Path(file_path)
     ext = path.suffix.lower()
 
     if ext == ".csv":
-        # Try multiple encodings
         for enc in ["utf-8", "latin-1", "cp1252"]:
             try:
-                df = pd.read_csv(file_path, encoding=enc, low_memory=False)
-                return df
+                return pd.read_csv(file_path, encoding=enc, low_memory=False)
             except UnicodeDecodeError:
                 continue
         raise ValueError("Could not decode CSV file.")
 
-    elif ext in [".xlsx", ".xls"]:
+    elif ext in (".xlsx", ".xls"):
         return pd.read_excel(file_path)
 
     elif ext == ".json":
@@ -50,12 +157,23 @@ def load_dataset(file_path: str) -> pd.DataFrame:
         if isinstance(data, list):
             return pd.DataFrame(data)
         elif isinstance(data, dict):
-            # Try common JSON structures
             for key in ["data", "reviews", "items", "records", "results"]:
                 if key in data and isinstance(data[key], list):
                     return pd.DataFrame(data[key])
             return pd.DataFrame([data])
         raise ValueError("Unsupported JSON structure.")
+
+    elif ext == ".pdf":
+        return _load_pdf(file_path)
+
+    elif ext in (".docx", ".doc"):
+        return _load_word(file_path)
+
+    elif ext == ".txt":
+        return _load_txt(file_path)
+
+    elif ext == ".tsv":
+        return _load_tsv(file_path)
 
     else:
         raise ValueError(f"Unsupported file format: {ext}")
@@ -172,8 +290,9 @@ def sample_for_analysis(df: pd.DataFrame, max_rows: int = 2000) -> pd.DataFrame:
 
 def load_dataset_chunked(file_path: str, chunk_size: int = 50_000):
     """
-    Generator that yields DataFrame chunks for large CSVs.
-    Falls back to full load for Excel/JSON (pandas handles those internally).
+    Generator that yields DataFrame chunks.
+    CSV: true chunked reading.
+    All other formats: load once and yield as a single chunk.
     """
     path = Path(file_path)
     ext = path.suffix.lower()
@@ -182,10 +301,7 @@ def load_dataset_chunked(file_path: str, chunk_size: int = 50_000):
         for enc in ["utf-8", "latin-1", "cp1252"]:
             try:
                 reader = pd.read_csv(
-                    file_path,
-                    encoding=enc,
-                    low_memory=True,
-                    chunksize=chunk_size,
+                    file_path, encoding=enc, low_memory=True, chunksize=chunk_size,
                 )
                 for chunk in reader:
                     yield chunk
@@ -194,7 +310,6 @@ def load_dataset_chunked(file_path: str, chunk_size: int = 50_000):
                 continue
         raise ValueError("Could not decode CSV file.")
     else:
-        # For Excel/JSON load once and yield as a single chunk
         yield load_dataset(file_path)
 
 

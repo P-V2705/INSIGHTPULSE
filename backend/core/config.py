@@ -19,7 +19,16 @@ class Settings:
     # Rows read per chunk when scanning large CSVs for column detection
     CSV_SCAN_CHUNK: int = 50_000
 
-    ALLOWED_EXTENSIONS: list = [".csv", ".xlsx", ".xls", ".json"]
+    ALLOWED_EXTENSIONS: list = [
+        # Tabular data
+        ".csv", ".xlsx", ".xls",
+        # Semi-structured
+        ".json",
+        # Documents
+        ".pdf", ".docx", ".doc",
+        # Text
+        ".txt", ".tsv",
+    ]
 
 settings = Settings()
 
