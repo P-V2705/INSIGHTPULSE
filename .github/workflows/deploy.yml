@@ -1,0 +1,55 @@
+name: CD — Deploy to Netlify
+
+# Triggers after CI passes on main, OR on direct push to main
+on:
+  workflow_run:
+    workflows: ["CI — Build & Lint"]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy Frontend to Netlify
+    runs-on: ubuntu-latest
+    # Only deploy when CI succeeded (skip if triggered by workflow_run that failed)
+    if: >
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: './frontend/dist'
+          production-branch: main
+          production-deploy: true
+          deploy-message: "Deploy from GitHub Actions — ${{ github.sha }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 10

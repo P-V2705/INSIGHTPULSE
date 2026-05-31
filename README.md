@@ -1,7 +1,14 @@
 # SentimentAI Platform
 ### Advanced AI-Powered Customer Sentiment Analysis System
 
-A full-stack enterprise-grade NLP intelligence platform for analyzing Kaggle review datasets.
+[![CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/YOUR_BADGE_ID/deploy-status)](https://app.netlify.com)
+
+---
+
+## Live Demo
+**Frontend:** `https://YOUR_SITE.netlify.app`  
+**API Docs:** Deploy backend separately — see [Backend Deployment](#backend-deployment)
 
 ---
 
@@ -10,115 +17,125 @@ A full-stack enterprise-grade NLP intelligence platform for analyzing Kaggle rev
 | Layer        | Technology                                      |
 |--------------|-------------------------------------------------|
 | Frontend     | React 18, Vite, Tailwind CSS, Recharts          |
-| Backend      | Python, FastAPI, Uvicorn                        |
-| NLP          | NLTK, TextBlob, spaCy, scikit-learn             |
-| Visualization| Recharts (interactive), custom word cloud       |
+| Backend      | Python 3.11+, FastAPI, Uvicorn                  |
+| NLP          | NLTK, TextBlob, scikit-learn                    |
 | Export       | ReportLab (PDF), CSV                            |
+| CI/CD        | GitHub Actions → Netlify                        |
 
 ---
 
-## Quick Start
+## Quick Start (Local)
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-
-### 1. Start Backend
+### 1. Backend
 ```bash
-# Double-click start_backend.bat  OR run manually:
 cd backend
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate          # Windows
 pip install -r requirements.txt
-python setup_nltk.py
+python download_nltk.py        # one-time NLTK data download
 uvicorn main:app --reload --port 8000
 ```
 
-### 2. Start Frontend
+### 2. Frontend
 ```bash
-# Double-click start_frontend.bat  OR run manually:
 cd frontend
-npm run dev
+npm install
+npm run dev                    # http://localhost:3000
 ```
 
-### 3. Open App
-- **Frontend:** http://localhost:3000
-- **API Docs:** http://localhost:8000/api/docs
+---
+
+## GitHub + Netlify CI/CD Setup
+
+### Step 1 — Push to GitHub
+```bash
+# In the project root:
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git push -u origin main
+```
+
+### Step 2 — Connect Netlify
+1. Go to [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import from Git**
+2. Select your GitHub repo
+3. Netlify auto-detects `netlify.toml` — build settings are pre-configured
+4. Set environment variable: `VITE_API_URL` = your deployed backend URL
+
+### Step 3 — Add GitHub Secrets
+Go to **GitHub repo → Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+|--------|-------|
+| `NETLIFY_AUTH_TOKEN` | From Netlify → User Settings → Applications → Personal access tokens |
+| `NETLIFY_SITE_ID` | From Netlify → Site → Site configuration → Site ID |
+| `VITE_API_URL` | Your deployed backend URL (e.g. `https://your-api.railway.app`) |
+
+### Step 4 — Auto-sync from Kiro IDE
+The Kiro hook `auto-push-on-save` is already configured. Every time you save a source file in Kiro, it will:
+1. Stage all changes (`git add -A`)
+2. Commit with message `auto: sync changes from Kiro IDE`
+3. Push to `origin main`
+4. GitHub Actions CI runs automatically
+5. Netlify deploys the new build
+
+---
+
+## Backend Deployment (Railway / Render / Fly.io)
+
+The backend is a standard FastAPI app. Deploy it to any Python-compatible host:
+
+### Railway (recommended)
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+railway login
+railway init
+railway up
+```
+
+### Render
+1. New Web Service → connect GitHub repo
+2. Root directory: `backend`
+3. Build command: `pip install -r requirements.txt && python download_nltk.py`
+4. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 
 ---
 
 ## Features
 
-### NLP Pipeline
-- Tokenization & stopword removal
-- Lemmatization & stemming
-- VADER + TextBlob ensemble sentiment
-- Emotion detection (8 emotions)
-- Keyword extraction (TF-IDF)
-- Topic modeling (KMeans clustering)
-- Extractive review summarization
-
-### Analysis
-- Positive / Negative / Neutral classification
-- Confidence & trust scoring
-- Product quality prediction (Excellent → Bad)
-- Fake/suspicious review detection
-
-### Dashboard
-- Sentiment pie chart
-- Emotion distribution bar chart
-- Sentiment trend line chart
-- Rating distribution chart
-- Keyword word cloud
-- Topic clusters
-- Filterable review table with pagination
-
-### Export
-- PDF report (ReportLab)
-- CSV results export
-- JSON data export
-
----
-
-## Supported Dataset Formats
-- `.csv` — Kaggle CSV exports
-- `.xlsx` / `.xls` — Excel files
-- `.json` — JSON review arrays
-
-## Supported Review Categories
-Products · Movies · Perfumes · Grocery · Restaurants · Mobile Phones · Gadgets · Hotels · Apps · Services · General
+- **Unlimited file upload** — CSV, Excel, JSON, any size
+- **Full NLP pipeline** — tokenization, lemmatization, VADER + TextBlob sentiment
+- **Emotion detection** — 8 emotion categories
+- **Keyword extraction** — TF-IDF top terms
+- **Topic modeling** — KMeans clustering
+- **Concise AI consultation** — headline + insight + action + flags
+- **Quality prediction** — Excellent / Good / Average / Poor / Bad
+- **Fake review detection** — heuristic suspicion scoring
+- **Interactive dashboard** — pie, bar, line, rating charts + keyword cloud
+- **New Analysis flow** — reset and re-analyze without restarting
+- **PDF + CSV export**
 
 ---
 
 ## Project Structure
 ```
 sentiment-ai-platform/
+├── .github/workflows/
+│   ├── ci.yml          # Build + lint on every push
+│   └── deploy.yml      # Auto-deploy to Netlify on main
 ├── backend/
-│   ├── main.py                  # FastAPI app entry
-│   ├── requirements.txt
-│   ├── setup_nltk.py
-│   ├── core/
-│   │   └── config.py
-│   ├── routers/
-│   │   ├── upload.py            # Dataset upload endpoints
-│   │   ├── analysis.py          # NLP analysis endpoints
-│   │   ├── dashboard.py         # Chart data endpoints
-│   │   └── export.py            # PDF/CSV export endpoints
-│   └── services/
-│       ├── nlp_engine.py        # Core NLP functions
-│       ├── dataset_processor.py # Data loading & cleaning
-│       ├── analysis_engine.py   # Full pipeline orchestrator
-│       └── export_service.py    # PDF/CSV generation
-└── frontend/
-    ├── src/
-    │   ├── pages/
-    │   │   ├── HomePage.jsx
-    │   │   ├── UploadPage.jsx
-    │   │   ├── AnalysisPage.jsx
-    │   │   └── DashboardPage.jsx
-    │   ├── components/
-    │   │   └── Navbar.jsx
-    │   ├── context/AppContext.jsx
-    │   └── utils/api.js
-    └── package.json
+│   ├── core/config.py
+│   ├── routers/        # upload, analysis, dashboard, export
+│   ├── services/       # nlp_engine, analysis_engine, dataset_processor, export_service
+│   ├── main.py
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── pages/      # HomePage, UploadPage, AnalysisPage, DashboardPage
+│   │   ├── components/ # Navbar
+│   │   ├── context/    # AppContext (session + resetSession)
+│   │   └── utils/      # api.js
+│   ├── vite.config.js
+│   └── netlify.toml    # ← Netlify reads this automatically
+├── netlify.toml
+└── README.md
 ```
