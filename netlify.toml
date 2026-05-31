@@ -1,11 +1,11 @@
 # ── Netlify configuration ─────────────────────────────────────────────────────
-# Builds the React frontend and serves it as a static SPA.
+# Builds the React/Vite frontend and serves it as a static SPA.
 # The Python backend must be deployed separately (Railway, Render, Fly.io, etc.)
 # and its URL set via the VITE_API_URL environment variable in Netlify.
 
 [build]
   base    = "frontend"
-  command = "npm ci && npm run build"
+  command = "npm install --legacy-peer-deps && npm run build"
   publish = "dist"
 
 [build.environment]
