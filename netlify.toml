@@ -1,0 +1,32 @@
+# ── Netlify configuration ─────────────────────────────────────────────────────
+# Builds the React frontend and serves it as a static SPA.
+# The Python backend must be deployed separately (Railway, Render, Fly.io, etc.)
+# and its URL set via the VITE_API_URL environment variable in Netlify.
+
+[build]
+  base    = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# ── SPA routing — redirect all paths to index.html ───────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# ── Security headers ──────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+
+# ── Cache static assets aggressively ─────────────────────────────────────────
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -1,0 +1,22 @@
+# Core API
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
+python-multipart==0.0.29
+aiofiles==25.1.0
+
+# Data
+pandas==3.0.3
+numpy==2.4.6
+openpyxl==3.1.5
+
+# NLP
+nltk==3.9.4
+textblob==0.20.0
+scikit-learn==1.8.0
+
+# Export
+reportlab==4.5.1
+pillow==12.2.0
+
+# Utilities
+requests==2.34.2
