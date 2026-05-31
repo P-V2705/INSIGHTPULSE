@@ -11,20 +11,37 @@ import { useApp } from '../context/AppContext'
 import clsx from 'clsx'
 
 // ── File format config ────────────────────────────────────────────────────────
+// We accept ALL MIME types (*) and validate by extension only.
+// This is necessary because Windows browsers send inconsistent MIME types
+// for Excel files (application/octet-stream, application/x-excel, etc.)
+const ACCEPTED_EXTENSIONS = new Set([
+  '.csv', '.xlsx', '.xls', '.tsv',
+  '.json', '.txt',
+  '.pdf', '.docx', '.doc',
+])
+
+// react-dropzone accept map — use extension-only keys so the OS file picker
+// shows the right filter, but we never reject based on MIME type alone.
 const ACCEPTED = {
-  // Tabular
-  'text/csv':                                                           ['.csv'],
-  'application/vnd.ms-excel':                                          ['.xls'],
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-  // Semi-structured
-  'application/json':                                                   ['.json'],
-  // Documents
-  'application/pdf':                                                    ['.pdf'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'application/msword':                                                 ['.doc'],
-  // Plain text
-  'text/plain':                                                         ['.txt'],
-  'text/tab-separated-values':                                          ['.tsv'],
+  'text/csv':                                                                    ['.csv'],
+  // Excel — all known MIME variants so Windows/Mac/Linux all work
+  'application/vnd.ms-excel':                                                   ['.xls', '.xlsx'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':          ['.xlsx'],
+  'application/x-excel':                                                        ['.xls', '.xlsx'],
+  'application/x-msexcel':                                                      ['.xls', '.xlsx'],
+  'application/excel':                                                           ['.xls', '.xlsx'],
+  'application/octet-stream':                                                    ['.xlsx', '.xls', '.csv'],
+  // JSON
+  'application/json':                                                            ['.json'],
+  'text/json':                                                                   ['.json'],
+  // PDF
+  'application/pdf':                                                             ['.pdf'],
+  // Word
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':    ['.docx'],
+  'application/msword':                                                          ['.doc', '.docx'],
+  // Plain text / TSV
+  'text/plain':                                                                  ['.txt', '.tsv', '.csv'],
+  'text/tab-separated-values':                                                   ['.tsv'],
 }
 
 const FORMAT_GROUPS = [
@@ -89,36 +106,41 @@ export default function UploadPage() {
 
   // ── Dropzone ────────────────────────────────────────────────────────────────
   const onDrop = useCallback(async (accepted, rejected) => {
-    if (rejected.length > 0) {
-      const reason = rejected[0].errors?.[0]?.message || 'Unsupported file type'
-      toast.error(reason)
+    // react-dropzone may reject files with unknown MIME types (e.g. Excel on
+    // some Windows browsers). Re-check by extension before showing an error.
+    const allFiles = [
+      ...accepted,
+      ...rejected.map(r => r.file),
+    ]
+
+    if (allFiles.length === 0) return
+
+    const f = allFiles[0]
+    const ext = '.' + (f.name.split('.').pop() || '').toLowerCase()
+
+    if (!ACCEPTED_EXTENSIONS.has(ext)) {
+      toast.error(`"${ext}" is not supported. Use CSV, Excel, JSON, PDF, Word, or TXT.`)
       return
     }
-    if (accepted.length === 0) return
 
-    const f = accepted[0]
     setFile(f)
     setResult(null)
     setError(null)
     setProgress(0)
-
-    // Pre-flight extension check
-    try {
-      const info = await checkFileInfo(f.name)
-      if (!info.data.allowed) {
-        setError(`File type "${info.data.extension}" is not supported.`)
-        setFile(null)
-      }
-    } catch {
-      // If pre-flight fails just let the upload attempt proceed
-    }
   }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ACCEPTED,
     maxFiles: 1,
-    // NO maxSize — unlimited
+    // Validate by extension in onDrop — never block based on MIME type alone
+    validator: (file) => {
+      const ext = '.' + (file.name.split('.').pop() || '').toLowerCase()
+      if (!ACCEPTED_EXTENSIONS.has(ext)) {
+        return { code: 'unsupported-type', message: `"${ext}" is not supported.` }
+      }
+      return null
+    },
   })
 
   // ── Upload ──────────────────────────────────────────────────────────────────
