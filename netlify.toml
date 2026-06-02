@@ -1,7 +1,6 @@
 # ── Netlify configuration ─────────────────────────────────────────────────────
 # Frontend: React/Vite SPA built from ./frontend
-# Backend:  FastAPI on Render — set VITE_API_URL (and BACKEND_URL) in Netlify
-#           Site Settings → Environment Variables
+# Backend:  FastAPI on Render at https://insightpulse-ja7r.onrender.com
 
 [build]
   base    = "frontend"
@@ -11,17 +10,17 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# ── API proxy — forward /api/* to the deployed FastAPI backend ────────────────
-# Set BACKEND_URL in Netlify env vars to your Render URL:
-#   https://insightpulse-ja7r.onrender.com
-# This avoids CORS and keeps the frontend calling a relative /api path.
+# ── API proxy ─────────────────────────────────────────────────────────────────
+# All /api/* requests are proxied to the Render backend.
+# status=200 + force=true means Netlify fetches and returns the response
+# without redirecting the browser (transparent reverse proxy).
 [[redirects]]
   from   = "/api/*"
-  to     = ":BACKEND_URL/api/:splat"
+  to     = "https://insightpulse-ja7r.onrender.com/api/:splat"
   status = 200
   force  = true
 
-# ── SPA fallback — all non-file paths → index.html ───────────────────────────
+# ── SPA fallback — all non-asset paths → index.html ──────────────────────────
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
