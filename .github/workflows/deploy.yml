@@ -1,55 +1,51 @@
 name: CD — Auto Deploy to Netlify
 
-# ── Triggers ───────────────────────────────────────────────────────────────────
-# Fires on every push to main — whether from Kiro IDE auto-commit or manual push.
 on:
   push:
     branches: [main]
 
 jobs:
   deploy:
-    name: Build & Deploy → insightpulseanalysis.netlify.app
+    name: Build and Deploy to insightpulseanalysis.netlify.app
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Get the code
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Node setup with cache
-      - name: Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      # 3. Install — legacy-peer-deps avoids react-wordcloud ERESOLVE
       - name: Install dependencies
         working-directory: frontend
         run: npm install --legacy-peer-deps
 
-      # 4. Build Vite app — inject backend URL from secret
       - name: Build
         working-directory: frontend
         run: npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-      # 5. Deploy to insightpulseanalysis.netlify.app
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3
         with:
           publish-dir: './frontend/dist'
           production-branch: main
           production-deploy: true
-          deploy-message: |
-            Auto-deploy from Kiro IDE
-            Commit: ${{ github.sha }}
-            Message: ${{ github.event.head_commit.message }}
+          deploy-message: "Auto-deploy: ${{ github.event.head_commit.message }}"
           enable-pull-request-comment: false
           enable-commit-comment: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         timeout-minutes: 10
+
+      - name: Ping Netlify Build Hook (instant backup trigger)
+        if: always()
+        run: |
+          curl -s -X POST "https://api.netlify.com/build_hooks/6a1ece5d2b3bd99bc56c64b0" -d "{}" || true
+          echo "Netlify build hook pinged for insightpulseanalysis.netlify.app"

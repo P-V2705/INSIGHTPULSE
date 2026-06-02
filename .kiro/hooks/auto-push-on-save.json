@@ -1,7 +1,7 @@
 {
   "name": "Auto Push to GitHub on Save",
   "version": "1.0.0",
-  "description": "Whenever a source file is saved in Kiro, auto-commit and push to GitHub main. This triggers GitHub Actions CI which deploys to insightpulseanalysis.netlify.app automatically.",
+  "description": "Whenever a source file is saved in Kiro, auto-commit and push to GitHub main. GitHub Actions then deploys to insightpulseanalysis.netlify.app automatically.",
   "when": {
     "type": "fileEdited",
     "patterns": [
@@ -21,6 +21,6 @@
   },
   "then": {
     "type": "askAgent",
-    "prompt": "A source file was just saved in the SentimentAI project. Execute these git commands in order using the shell tool:\n\n1. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n2. Check if there are staged changes: git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" diff --cached --stat\n3. If there ARE staged changes, commit: git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"auto: sync from Kiro IDE\"\n4. Push: git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n\nIf no changes are staged, skip the commit and push steps silently. Do not ask for confirmation — just execute."
+    "prompt": "A source file was just saved in the SentimentAI project. Run these steps using the execute_pwsh tool:\n\nStep 1 — Stage all changes:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n\nStep 2 — Check if there are staged changes:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" diff --cached --quiet\n\nStep 3 — If there ARE staged changes (exit code 1), commit and push:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"auto: sync from Kiro IDE\"\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n\nIf no changes exist (exit code 0), do nothing. The post-commit hook will auto-push. Do not ask for confirmation."
   }
 }
