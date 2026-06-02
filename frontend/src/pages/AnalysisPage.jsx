@@ -29,14 +29,32 @@ export default function AnalysisPage() {
   const navigate  = useNavigate()
   const { sessionId, uploadData, setAnalysisResults, resetSession } = useApp()
 
-  const [status,      setStatus]      = useState('idle') // idle | processing | completed | error
-  const [stepIndex,   setStepIndex]   = useState(0)
-  const [errorMsg,    setErrorMsg]    = useState('')
-  const [maxRows,     setMaxRows]     = useState(2000)
-  const [quickText,   setQuickText]   = useState('')
-  const [quickResult, setQuickResult] = useState(null)
-  const [quickLoading,setQuickLoading]= useState(false)
-  const [resetting,   setResetting]   = useState(false)
+  const [status,       setStatus]      = useState('idle')
+  const [stepIndex,    setStepIndex]   = useState(0)
+  const [errorMsg,     setErrorMsg]    = useState('')
+  const [maxRows,      setMaxRows]     = useState(2000)
+  const [quickText,    setQuickText]   = useState('')
+  const [quickResult,  setQuickResult] = useState(null)
+  const [quickLoading, setQuickLoading]= useState(false)
+  const [resetting,    setResetting]   = useState(false)
+
+  // Column overrides — pre-filled from auto-detection, editable by user
+  const [reviewCol, setReviewCol] = useState(
+    uploadData?.detected_columns?.review_column || ''
+  )
+  const [ratingCol, setRatingCol] = useState(
+    uploadData?.detected_columns?.rating_column || ''
+  )
+
+  // Sync whenever uploadData changes (e.g. after page navigation)
+  useEffect(() => {
+    if (uploadData?.detected_columns) {
+      setReviewCol(uploadData.detected_columns.review_column || '')
+      setRatingCol(uploadData.detected_columns.rating_column || '')
+    }
+  }, [uploadData])
+
+  const allColumns = uploadData?.summary?.columns || []
 
   const pollRef = useRef(null)
   const stepRef = useRef(null)
@@ -58,9 +76,10 @@ export default function AnalysisPage() {
     }, 1800)
 
     try {
-      const reviewCol = uploadData?.detected_columns?.review_column || null
-      const ratingCol = uploadData?.detected_columns?.rating_column || null
-      await startAnalysis(sessionId, reviewCol, ratingCol, maxRows)
+      // Pass user-selected columns (or null to let backend auto-detect)
+      const rc = reviewCol?.trim() || null
+      const rt = ratingCol?.trim() || null
+      await startAnalysis(sessionId, rc, rt, maxRows)
 
       pollRef.current = setInterval(async () => {
         try {
@@ -182,6 +201,67 @@ export default function AnalysisPage() {
       {/* Config + Run */}
       <div className="card p-6 mb-6">
         <h2 className="font-semibold text-slate-200 mb-4">Analysis Configuration</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+
+          {/* Review column selector */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">
+              Review / Text Column
+              {!reviewCol && (
+                <span className="ml-2 text-amber-400">⚠ not detected — please select</span>
+              )}
+            </label>
+            {allColumns.length > 0 ? (
+              <select
+                value={reviewCol}
+                onChange={e => setReviewCol(e.target.value)}
+                className={`input-field ${!reviewCol ? 'border-amber-500/50' : ''}`}
+                disabled={status === 'processing'}
+              >
+                <option value="">— select column —</option>
+                {allColumns.map(col => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={reviewCol}
+                onChange={e => setReviewCol(e.target.value)}
+                placeholder="e.g. review_text"
+                className="input-field"
+                disabled={status === 'processing'}
+              />
+            )}
+          </div>
+
+          {/* Rating column selector */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Rating Column (optional)</label>
+            {allColumns.length > 0 ? (
+              <select
+                value={ratingCol}
+                onChange={e => setRatingCol(e.target.value)}
+                className="input-field"
+                disabled={status === 'processing'}
+              >
+                <option value="">None</option>
+                {allColumns.map(col => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={ratingCol}
+                onChange={e => setRatingCol(e.target.value)}
+                placeholder="e.g. rating (optional)"
+                className="input-field"
+                disabled={status === 'processing'}
+              />
+            )}
+          </div>
+
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Max Reviews to Analyze</label>

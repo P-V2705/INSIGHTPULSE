@@ -127,10 +127,23 @@ def generate_pdf_report(analysis_data: dict, filename: str = None) -> str:
     story.append(Paragraph(f"<b>AI Recommendation:</b> {quality.get('recommendation', '')}", body_style))
     story.append(Spacer(1, 0.15 * inch))
 
-    # --- AI Summary ---
-    story.append(Paragraph("AI-Generated Review Summary", heading_style))
-    ai_summary = analysis_data.get("ai_summary", "No summary available.")
-    story.append(Paragraph(ai_summary, body_style))
+    # --- AI Consultation Summary ---
+    story.append(Paragraph("AI Consultation Summary", heading_style))
+    ai_summary = analysis_data.get("ai_summary", {})
+
+    if isinstance(ai_summary, dict):
+        # New structured format
+        if ai_summary.get("headline"):
+            story.append(Paragraph(f"<b>Verdict:</b> {ai_summary['headline']}", body_style))
+        if ai_summary.get("insight"):
+            story.append(Paragraph(f"<b>Insight:</b> {ai_summary['insight']}", body_style))
+        if ai_summary.get("action"):
+            story.append(Paragraph(f"<b>Action:</b> {ai_summary['action']}", body_style))
+        for flag in ai_summary.get("flags", []):
+            story.append(Paragraph(f"<b>⚠ Alert:</b> {flag}", body_style))
+    else:
+        # Legacy string format
+        story.append(Paragraph(str(ai_summary) or "No summary available.", body_style))
     story.append(Spacer(1, 0.15 * inch))
 
     # --- Top Keywords ---
