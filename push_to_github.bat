@@ -1,6 +1,6 @@
 @echo off
 echo ============================================================
-echo   SentimentAI Platform — Push to GitHub
+echo   INSIGHT PULSE — Push to GitHub
 echo ============================================================
 echo.
 

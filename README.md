@@ -1,4 +1,4 @@
-# SentimentAI Platform
+# InsightPulse
 ### Advanced AI-Powered Customer Sentiment Analysis System
 
 [![CI](https://github.com/P-V2705/INSIGHTPULSE/actions/workflows/ci.yml/badge.svg)](https://github.com/P-V2705/INSIGHTPULSE/actions)
@@ -35,7 +35,7 @@ Browser → https://insightpulseanalysis.netlify.app
               │  /api/*  (Netlify proxy redirect)
               ▼
          FastAPI backend on Render
-         https://sentimentai-backend.onrender.com
+         https://insightpulse-ja7r.onrender.com
 ```
 
 The frontend always calls `/api/...` (relative URL).  
@@ -77,7 +77,7 @@ npm run dev                    # http://localhost:3000
    - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - **Environment:** Python 3
 4. Click **Create Web Service**
-5. Wait for deployment — copy the URL, e.g. `https://sentimentai-backend.onrender.com`
+5. Wait for deployment — copy the URL, e.g. `https://insightpulse-ja7r.onrender.com`
 
 > Alternatively, Render auto-detects `render.yaml` at the repo root for one-click deploy.
 
@@ -89,7 +89,7 @@ Go to **Netlify → insightpulseanalysis → Site configuration → Environment 
 
 | Variable | Value |
 |---|---|
-| `BACKEND_URL` | `https://sentimentai-backend.onrender.com` (your Render URL, no trailing slash) |
+| `BACKEND_URL` | `https://insightpulse-ja7r.onrender.com` (your Render URL, no trailing slash) |
 
 Then **trigger a redeploy** (Deploys → Trigger deploy → Deploy site).
 

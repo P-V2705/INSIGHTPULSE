@@ -38,7 +38,7 @@ export default function HomePage() {
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-medium mb-6">
             <Sparkles size={12} />
-            AI-Powered NLP Intelligence Platform
+            InsightPulse — AI-Powered NLP Intelligence Platform
           </div>
 
           <h1 className="text-5xl sm:text-6xl font-extrabold text-slate-100 leading-tight tracking-tight mb-6">
@@ -150,7 +150,7 @@ export default function HomePage() {
             <Brain size={28} className="text-white" />
           </div>
           <h2 className="text-3xl font-bold text-slate-100 mb-4">Ready to Analyze Your Reviews?</h2>
-          <p className="text-slate-400 mb-8">Upload your dataset and get AI-powered insights in minutes.</p>
+          <p className="text-slate-400 mb-8">Upload your dataset and get AI-powered insights in minutes with InsightPulse.</p>
           <Link to="/upload" className="btn-primary text-base px-8 py-3">
             Upload Dataset <ArrowRight size={18} />
           </Link>
@@ -160,7 +160,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-slate-800/60 py-8 px-4 text-center">
         <p className="text-slate-500 text-sm">
-          SentimentAI Platform — Advanced NLP Intelligence System &nbsp;·&nbsp; Built with FastAPI + React + Tailwind
+          INSIGHT PULSE — Advanced NLP Intelligence System &nbsp;·&nbsp; Built with FastAPI + React + Tailwind
         </p>
       </footer>
     </div>

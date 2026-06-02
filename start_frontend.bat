@@ -1,6 +1,6 @@
 @echo off
 echo ============================================
-echo   SentimentAI Platform - Frontend Server
+echo   INSIGHT PULSE - Frontend Server
 echo ============================================
 echo.
 

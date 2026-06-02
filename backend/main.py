@@ -7,7 +7,7 @@ from routers import upload, analysis, dashboard, export
 from core.config import settings
 
 app = FastAPI(
-    title="SentimentAI Platform API",
+    title="InsightPulse API",
     description="Advanced AI-Powered Customer Sentiment Analysis Engine",
     version="2.0.0",
     docs_url="/api/docs",
@@ -33,12 +33,12 @@ app.include_router(export.router,    prefix="/api/export",    tags=["Export"])
 # ── Root / Health ─────────────────────────────────────────────────────────────
 @app.get("/")
 async def root():
-    return {"message": "SentimentAI Platform API", "version": "2.0.0", "status": "operational"}
+    return {"message": "InsightPulse API", "version": "2.0.0", "status": "operational"}
 
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "SentimentAI Backend"}
+    return {"status": "healthy", "service": "InsightPulse Backend"}
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

@@ -29,8 +29,8 @@ export default function Navbar() {
               <Brain className="w-4.5 h-4.5 text-white" size={18} />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-sm font-bold text-slate-100 tracking-tight">SentimentAI</span>
-              <span className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">Platform</span>
+              <span className="text-sm font-bold text-slate-100 tracking-tight">INSIGHT PULSE</span>
+              <span className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">Analytics</span>
             </div>
           </Link>
 

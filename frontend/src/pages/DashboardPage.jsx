@@ -218,7 +218,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100 mb-1">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold text-slate-100 mb-1">InsightPulse Dashboard</h1>
           <p className="text-slate-400 text-sm">AI-powered sentiment intelligence · {overview.total_analyzed?.toLocaleString()} reviews analyzed</p>
         </div>
         <div className="flex items-center gap-2">

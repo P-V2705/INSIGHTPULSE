@@ -12,8 +12,8 @@
   NODE_VERSION = "20"
 
 # ── API proxy — forward /api/* to the deployed FastAPI backend ────────────────
-# Set BACKEND_URL in Netlify env vars to your Render URL, e.g.:
-#   https://sentimentai-backend.onrender.com
+# Set BACKEND_URL in Netlify env vars to your Render URL:
+#   https://insightpulse-ja7r.onrender.com
 # This avoids CORS and keeps the frontend calling a relative /api path.
 [[redirects]]
   from   = "/api/*"

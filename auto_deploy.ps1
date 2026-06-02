@@ -9,7 +9,7 @@ param(
 $ROOT = "C:\Users\prade\OneDrive\Desktop\InsightPulse\sentiment-ai-platform"
 $HOOK = "https://api.netlify.com/build_hooks/6a1ece5d2b3bd99bc56c64b0"
 
-Write-Host "`n[SentimentAI] Auto-Deploy Pipeline" -ForegroundColor Cyan
+Write-Host "`n[InsightPulse] Auto-Deploy Pipeline" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 
 # Stage

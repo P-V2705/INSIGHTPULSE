@@ -4,7 +4,7 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings:
-    APP_NAME: str = "SentimentAI Platform"
+    APP_NAME: str = "InsightPulse"
     VERSION: str = "2.0.0"
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     EXPORT_DIR: Path = BASE_DIR / "exports"
