@@ -1,7 +1,7 @@
 # ── Netlify configuration ─────────────────────────────────────────────────────
-# Builds the React/Vite frontend and serves it as a static SPA.
-# The Python backend must be deployed separately (Railway, Render, Fly.io, etc.)
-# and its URL set via the VITE_API_URL environment variable in Netlify.
+# Frontend: React/Vite SPA built from ./frontend
+# Backend:  FastAPI on Render — set VITE_API_URL (and BACKEND_URL) in Netlify
+#           Site Settings → Environment Variables
 
 [build]
   base    = "frontend"
@@ -11,7 +11,17 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# ── SPA routing — redirect all paths to index.html ───────────────────────────
+# ── API proxy — forward /api/* to the deployed FastAPI backend ────────────────
+# Set BACKEND_URL in Netlify env vars to your Render URL, e.g.:
+#   https://sentimentai-backend.onrender.com
+# This avoids CORS and keeps the frontend calling a relative /api path.
+[[redirects]]
+  from   = "/api/*"
+  to     = ":BACKEND_URL/api/:splat"
+  status = 200
+  force  = true
+
+# ── SPA fallback — all non-file paths → index.html ───────────────────────────
 [[redirects]]
   from   = "/*"
   to     = "/index.html"

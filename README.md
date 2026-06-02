@@ -7,7 +7,10 @@
 ---
 
 ## Live Demo
-**Live Demo:** [https://insightpulseanalysis.netlify.app](https://insightpulseanalysis.netlify.app)
+**Frontend:** [https://insightpulseanalysis.netlify.app](https://insightpulseanalysis.netlify.app)
+
+> **Note:** The backend must be deployed separately (see instructions below).
+> Once deployed, set `BACKEND_URL` in Netlify → Site Settings → Environment Variables.
 
 ---
 
@@ -16,10 +19,28 @@
 | Layer        | Technology                                      |
 |--------------|-------------------------------------------------|
 | Frontend     | React 18, Vite, Tailwind CSS, Recharts          |
-| Backend      | Python 3.11+, FastAPI, Uvicorn                  |
+| Backend      | Python 3.11, FastAPI, Uvicorn                   |
 | NLP          | NLTK, TextBlob, scikit-learn                    |
-| Export       | ReportLab (PDF), CSV                            |
-| CI/CD        | GitHub Actions → Netlify                        |
+| Export       | ReportLab (PDF), CSV, JSON                      |
+| CI/CD        | GitHub Actions → Netlify (frontend auto-deploy) |
+| Backend Host | Render (free tier — see deploy steps below)     |
+
+---
+
+## Architecture
+
+```
+Browser → https://insightpulseanalysis.netlify.app
+              │
+              │  /api/*  (Netlify proxy redirect)
+              ▼
+         FastAPI backend on Render
+         https://sentimentai-backend.onrender.com
+```
+
+The frontend always calls `/api/...` (relative URL).  
+Netlify's `netlify.toml` proxy forwards those requests to your Render backend.  
+No backend URL is hardcoded in the JS bundle.
 
 ---
 
@@ -44,96 +65,97 @@ npm run dev                    # http://localhost:3000
 
 ---
 
-## GitHub + Netlify CI/CD Setup
+## Full Deployment Guide
 
-### Step 1 — Push to GitHub
-```bash
-# Already done! Your repo is live at:
-# https://github.com/P-V2705/INSIGHTPULSE
-```
+### Step 1 — Deploy Backend to Render (free)
 
-### Step 2 — Connect Netlify
-1. Go to [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import from Git**
-2. Select your GitHub repo
-3. Netlify auto-detects `netlify.toml` — build settings are pre-configured
-4. Set environment variable: `VITE_API_URL` = your deployed backend URL
+1. Go to [render.com](https://render.com) → **New** → **Web Service**
+2. Connect your GitHub repo: `P-V2705/INSIGHTPULSE`
+3. Configure:
+   - **Root Directory:** `backend`
+   - **Build Command:** `pip install -r requirements.txt && python download_nltk.py`
+   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Environment:** Python 3
+4. Click **Create Web Service**
+5. Wait for deployment — copy the URL, e.g. `https://sentimentai-backend.onrender.com`
 
-### Step 3 — Add GitHub Secrets
-Go to **GitHub repo → Settings → Secrets and variables → Actions** and add:
-
-| Secret | Value |
-|--------|-------|
-| `NETLIFY_AUTH_TOKEN` | From Netlify → User Settings → Applications → Personal access tokens |
-| `NETLIFY_SITE_ID` | From Netlify → Site → Site configuration → Site ID |
-| `VITE_API_URL` | Your deployed backend URL (e.g. `https://your-api.railway.app`) |
-
-### Step 4 — Auto-sync from Kiro IDE
-The Kiro hook `auto-push-on-save` is already configured. Every time you save a source file in Kiro, it will:
-1. Stage all changes (`git add -A`)
-2. Commit with message `auto: sync changes from Kiro IDE`
-3. Push to `origin main`
-4. GitHub Actions CI runs automatically
-5. Netlify deploys the new build
+> Alternatively, Render auto-detects `render.yaml` at the repo root for one-click deploy.
 
 ---
 
-## Backend Deployment (Railway / Render / Fly.io)
+### Step 2 — Connect Backend to Netlify
 
-The backend is a standard FastAPI app. Deploy it to any Python-compatible host:
+Go to **Netlify → insightpulseanalysis → Site configuration → Environment variables** and add:
 
-### Railway (recommended)
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-railway login
-railway init
-railway up
+| Variable | Value |
+|---|---|
+| `BACKEND_URL` | `https://sentimentai-backend.onrender.com` (your Render URL, no trailing slash) |
+
+Then **trigger a redeploy** (Deploys → Trigger deploy → Deploy site).
+
+The `netlify.toml` proxy rule will now forward all `/api/*` requests to your backend:
+```toml
+[[redirects]]
+  from   = "/api/*"
+  to     = ":BACKEND_URL/api/:splat"
+  status = 200
+  force  = true
 ```
 
-### Render
-1. New Web Service → connect GitHub repo
-2. Root directory: `backend`
-3. Build command: `pip install -r requirements.txt && python download_nltk.py`
-4. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+---
+
+### Step 3 — GitHub Secrets (for CI/CD auto-deploy)
+
+Go to **GitHub repo → Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+|---|---|
+| `NETLIFY_AUTH_TOKEN` | Netlify → User Settings → Applications → Personal access tokens |
+| `NETLIFY_SITE_ID` | Netlify → Site → Site configuration → Site ID |
 
 ---
 
 ## Features
 
-- **Unlimited file upload** — CSV, Excel, JSON, any size
+- **File upload** — CSV, Excel, JSON, PDF, Word, TXT, TSV — no size limit
 - **Full NLP pipeline** — tokenization, lemmatization, VADER + TextBlob sentiment
 - **Emotion detection** — 8 emotion categories
 - **Keyword extraction** — TF-IDF top terms
 - **Topic modeling** — KMeans clustering
-- **Concise AI consultation** — headline + insight + action + flags
+- **AI consultation** — structured headline + insight + action + flags
 - **Quality prediction** — Excellent / Good / Average / Poor / Bad
 - **Fake review detection** — heuristic suspicion scoring
-- **Interactive dashboard** — pie, bar, line, rating charts + keyword cloud
-- **New Analysis flow** — reset and re-analyze without restarting
-- **PDF + CSV export**
+- **Category breakdown** — per-category sentiment chart
+- **Interactive dashboard** — pie, bar, line, rating, category charts + keyword cloud
+- **PDF + CSV + JSON export**
+- **Mobile-responsive** — full hamburger nav on small screens
 
 ---
 
 ## Project Structure
+
 ```
 sentiment-ai-platform/
+├── render.yaml                 # One-click Render backend deploy
+├── netlify.toml                # Netlify build + /api/* proxy
 ├── .github/workflows/
-│   ├── ci.yml          # Build + lint on every push
-│   └── deploy.yml      # Auto-deploy to Netlify on main
+│   ├── ci.yml                  # Build + lint on every push
+│   └── deploy.yml              # Auto-deploy frontend to Netlify on main
 ├── backend/
+│   ├── Procfile                # Render/Heroku start command
+│   ├── runtime.txt             # Python 3.11
 │   ├── core/config.py
-│   ├── routers/        # upload, analysis, dashboard, export
-│   ├── services/       # nlp_engine, analysis_engine, dataset_processor, export_service
+│   ├── routers/                # upload, analysis, dashboard, export
+│   ├── services/               # nlp_engine, analysis_engine, dataset_processor, export_service
 │   ├── main.py
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/      # HomePage, UploadPage, AnalysisPage, DashboardPage
-│   │   ├── components/ # Navbar
-│   │   ├── context/    # AppContext (session + resetSession)
-│   │   └── utils/      # api.js
-│   ├── vite.config.js
-│   └── netlify.toml    # ← Netlify reads this automatically
-├── netlify.toml
+│   │   ├── pages/              # HomePage, UploadPage, AnalysisPage, DashboardPage
+│   │   ├── components/         # Navbar (with mobile menu)
+│   │   ├── context/            # AppContext
+│   │   └── utils/api.js        # All axios calls — always uses relative /api path
+│   ├── vite.config.js          # Dev proxy: /api → localhost:8000
+│   └── tailwind.config.js
 └── README.md
 ```
