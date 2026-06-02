@@ -1,0 +1,12 @@
+{
+  "name": "Deploy to Netlify Now",
+  "version": "1.0.0",
+  "description": "Manually trigger: commit all changes and push to GitHub, which deploys to insightpulseanalysis.netlify.app",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The user wants to deploy now. Execute these steps:\n\n1. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n2. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"deploy: manual trigger from Kiro IDE\"\n3. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n4. Tell the user: 'Pushed to GitHub. GitHub Actions will now build and deploy to https://insightpulseanalysis.netlify.app — takes about 2 minutes.'"
+  }
+}

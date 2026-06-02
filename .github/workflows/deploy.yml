@@ -1,54 +1,54 @@
-name: CD — Deploy to Netlify
+name: CD — Auto Deploy to Netlify
 
-# Triggers after CI passes on main, OR on direct push to main
+# ── Triggers ───────────────────────────────────────────────────────────────────
+# Fires on every push to main — whether from Kiro IDE auto-commit or manual push.
 on:
-  workflow_run:
-    workflows: ["CI — Build & Lint"]
-    types: [completed]
-    branches: [main]
   push:
     branches: [main]
 
 jobs:
   deploy:
-    name: Deploy Frontend to Netlify
+    name: Build & Deploy → insightpulseanalysis.netlify.app
     runs-on: ubuntu-latest
-    # Only deploy when CI succeeded (skip if triggered by workflow_run that failed)
-    if: >
-      github.event_name == 'push' ||
-      github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - name: Checkout code
+      # 1. Get the code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      # 2. Node setup with cache
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      # 3. Install — legacy-peer-deps avoids react-wordcloud ERESOLVE
       - name: Install dependencies
         working-directory: frontend
         run: npm install --legacy-peer-deps
 
-      - name: Build frontend
+      # 4. Build Vite app — inject backend URL from secret
+      - name: Build
         working-directory: frontend
         run: npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
+      # 5. Deploy to insightpulseanalysis.netlify.app
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3
         with:
           publish-dir: './frontend/dist'
           production-branch: main
           production-deploy: true
-          deploy-message: "Deploy from GitHub Actions — ${{ github.sha }}"
-          enable-pull-request-comment: true
+          deploy-message: |
+            Auto-deploy from Kiro IDE
+            Commit: ${{ github.sha }}
+            Message: ${{ github.event.head_commit.message }}
+          enable-pull-request-comment: false
           enable-commit-comment: true
-          overwrites-pull-request-comment: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_SITE_ID }}
