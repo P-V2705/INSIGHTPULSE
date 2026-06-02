@@ -10,8 +10,10 @@ import numpy as np
 from collections import Counter
 from textblob import TextBlob
 
-# Download required NLTK data
-for pkg in ["punkt", "stopwords", "wordnet", "averaged_perceptron_tagger", "vader_lexicon"]:
+# Download required NLTK data — punkt_tab is required by NLTK 3.8.2+
+for pkg in ["punkt", "punkt_tab", "stopwords", "wordnet",
+            "averaged_perceptron_tagger", "averaged_perceptron_tagger_eng",
+            "vader_lexicon", "omw-1.4"]:
     try:
         nltk.download(pkg, quiet=True)
     except Exception:
