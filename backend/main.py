@@ -48,9 +48,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
-        # Remove the default 1 MB body limit — let the OS decide
         limit_concurrency=10,
         timeout_keep_alive=300,
-        # h11 max incomplete event size: 16 GB (effectively unlimited)
-        h11_max_incomplete_event_size=16 * 1024 * 1024 * 1024,
     )

@@ -2,12 +2,12 @@
 ### Advanced AI-Powered Customer Sentiment Analysis System
 
 [![CI](https://github.com/P-V2705/INSIGHTPULSE/actions/workflows/ci.yml/badge.svg)](https://github.com/P-V2705/INSIGHTPULSE/actions)
-[![Netlify Status](https://api.netlify.com/api/v1/badges/YOUR_BADGE_ID/deploy-status)](https://app.netlify.com)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/insightpulseanalysis/deploy-status)](https://insightpulseanalysis.netlify.app)
 
 ---
 
 ## Live Demo
-**Live Demo:** `https://YOUR_SITE.netlify.app` ← update after deployment
+**Live Demo:** [https://insightpulseanalysis.netlify.app](https://insightpulseanalysis.netlify.app)
 
 ---
 

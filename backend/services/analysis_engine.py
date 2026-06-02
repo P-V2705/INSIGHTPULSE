@@ -231,7 +231,7 @@ def run_full_analysis(file_path: str, review_col: str = None,
         "trend_data": trend_data,
         "rating_distribution": rating_dist,
         "category_breakdown": category_breakdown,
-        "review_samples": results[:100],  # First 100 for table display
+        "review_samples": results,  # All rows — dashboard paginates client-side
         "detected_columns": detected,
     }
     return _to_native(raw)

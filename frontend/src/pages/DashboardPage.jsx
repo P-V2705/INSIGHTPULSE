@@ -9,9 +9,10 @@ import {
   TrendingUp, MessageSquare, Shield, Star, Search,
   ChevronLeft, ChevronRight, RefreshCw, Sparkles, Brain,
   CheckCircle, ArrowRight, TriangleAlert, Upload, RotateCcw,
+  Code2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { getChartData, getReviews, exportPDF, exportCSV } from '../utils/api'
+import { getChartData, getReviews, exportPDF, exportCSV, exportJSON } from '../utils/api'
 import { useApp } from '../context/AppContext'
 import clsx from 'clsx'
 
@@ -117,6 +118,17 @@ export default function DashboardPage() {
     finally { setExporting('') }
   }
 
+  const handleExportJSON = async () => {
+    setExporting('json')
+    try {
+      const res = await exportJSON(sessionId)
+      const url = URL.createObjectURL(new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' }))
+      const a = document.createElement('a'); a.href = url; a.download = 'sentiment_analysis.json'; a.click()
+      toast.success('JSON downloaded!')
+    } catch (e) { toast.error(e.message) }
+    finally { setExporting('') }
+  }
+
   const handleExportCSV = async () => {
     setExporting('csv')
     try {
@@ -170,6 +182,7 @@ export default function DashboardPage() {
   const ratingChart = charts.rating_chart || {}
   const wordCloud = charts.word_cloud || []
   const topics = charts.topics || []
+  const categoryChart = charts.category_chart || {}
 
   // Prepare chart data
   const pieData = (sentPie.labels || []).map((l, i) => ({
@@ -193,6 +206,12 @@ export default function DashboardPage() {
     rating: `${l}★`, count: ratingChart.values?.[i] || 0
   }))
 
+  const categoryData = (categoryChart.labels || []).map((l, i) => ({
+    name: l,
+    sentiment: parseFloat(categoryChart.avg_sentiments?.[i] || 0).toFixed(3),
+    count: categoryChart.counts?.[i] || 0,
+  }))
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 animate-fade-in space-y-8">
 
@@ -212,6 +231,10 @@ export default function DashboardPage() {
           <button onClick={handleExportCSV} disabled={exporting === 'csv'} className="btn-secondary text-sm">
             {exporting === 'csv' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             CSV
+          </button>
+          <button onClick={handleExportJSON} disabled={exporting === 'json'} className="btn-secondary text-sm">
+            {exporting === 'json' ? <Loader2 size={14} className="animate-spin" /> : <Code2 size={14} />}
+            JSON
           </button>
           <button onClick={handleExportPDF} disabled={exporting === 'pdf'} className="btn-primary text-sm">
             {exporting === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
@@ -404,6 +427,31 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Category Breakdown */}
+      {categoryData.length > 0 && (
+        <div className="card p-6">
+          <h3 className="section-title mb-1">Category Breakdown</h3>
+          <p className="section-subtitle mb-5">Average sentiment score per product / service category</p>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={categoryData} margin={{ top: 5, right: 20, left: -20, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} angle={-25} textAnchor="end" interval={0} />
+              <YAxis domain={[-1, 1]} tick={{ fill: '#64748b', fontSize: 11 }} />
+              <Tooltip
+                contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 10 }}
+                formatter={(v, n, p) => [v, 'Avg Sentiment']}
+                labelFormatter={(l) => `${l} (${categoryData.find(d => d.name === l)?.count || 0} reviews)`}
+              />
+              <Bar dataKey="sentiment" radius={[4, 4, 0, 0]} name="Avg Sentiment">
+                {categoryData.map((entry, i) => (
+                  <Cell key={i} fill={parseFloat(entry.sentiment) >= 0.05 ? '#10b981' : parseFloat(entry.sentiment) <= -0.05 ? '#ef4444' : '#f59e0b'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Topics */}
       {topics.length > 0 && (
