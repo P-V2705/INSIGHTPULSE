@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 // Always use a relative /api path.
-// - In local dev: Vite proxy rewrites /api → http://localhost:8000/api
-// - In production (Netlify): netlify.toml proxy rewrites /api/* → BACKEND_URL/api/*
+// - In local dev: Vite proxy (vite.config.js) rewrites /api → http://localhost:8000/api
+// - In production (Cloudflare Pages): _redirects proxies /api/* → Render backend
 // This means NO hardcoded backend URL is ever baked into the JS bundle.
 const BASE_URL = '/api'
 
@@ -22,7 +22,7 @@ api.interceptors.response.use(
       )
     }
     if (err.response.status === 404) {
-      // On Netlify this usually means BACKEND_URL env var is not set
+      // On Cloudflare Pages this usually means the _redirects proxy target is unreachable
       const detail = err.response?.data?.detail
       if (typeof detail === 'string') {
         return Promise.reject(new Error(detail))
@@ -30,8 +30,8 @@ api.interceptors.response.use(
       return Promise.reject(
         new Error(
           'API endpoint not found (404). ' +
-          'If you are on the live site, the backend may not be deployed yet. ' +
-          'Set BACKEND_URL in Netlify environment variables.'
+          'If you are on the live site, verify the backend is deployed on Render ' +
+          'and the _redirects proxy in Cloudflare Pages is pointing to the correct URL.'
         )
       )
     }
