@@ -29,10 +29,17 @@ if %ERRORLEVEL% EQU 0 (
     echo ============================================================
     echo.
     echo Next steps:
-    echo  1. Go to app.netlify.com ^> Add new site ^> Import from Git
-    echo  2. Select your repo — netlify.toml is pre-configured
-    echo  3. Set VITE_API_URL env var to your backend URL
-    echo  4. Add NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID to GitHub Secrets
+    echo  1. Go to dash.cloudflare.com ^> Workers ^& Pages ^> Create ^> Pages
+    echo  2. Connect GitHub and select your repo
+    echo  3. Build settings:
+    echo     - Root directory: frontend
+    echo     - Build command:  npm install --legacy-peer-deps ^&^& npm run build
+    echo     - Output dir:     dist
+    echo  4. Add GitHub secrets: CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
+    echo     (Settings ^> Secrets and variables ^> Actions)
+    echo.
+    echo  Cloudflare Pages will auto-deploy on every push to main!
+    echo  Live at: https://insightpulse.pages.dev
     echo.
 ) else (
     echo.
