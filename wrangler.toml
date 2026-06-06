@@ -1,0 +1,17 @@
+# ── Cloudflare Pages — InsightPulse Frontend ─────────────────────────────────
+# This file configures Cloudflare Pages for the React/Vite SPA.
+# The backend (FastAPI) remains on Render; Cloudflare Pages proxies /api/*
+# to the Render URL via _redirects (no backend URL baked into the JS bundle).
+#
+# Deploy via: wrangler pages deploy frontend/dist
+# Or automatically via GitHub → Cloudflare Pages integration.
+
+name = "insightpulse"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "frontend/dist"
+
+[env.production]
+name = "insightpulse"
+
+[env.preview]
+name = "insightpulse-preview"

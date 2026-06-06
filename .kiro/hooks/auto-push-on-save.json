@@ -1,7 +1,7 @@
 {
   "name": "Auto Push to GitHub on Save",
-  "version": "1.0.0",
-  "description": "Whenever a source file is saved in Kiro, auto-commit and push to GitHub main. GitHub Actions then deploys to insightpulseanalysis.netlify.app automatically.",
+  "version": "1.1.0",
+  "description": "Whenever a source file is saved in Kiro, auto-commit and push to GitHub main. GitHub Actions then builds and deploys to Cloudflare Pages (insightpulse.pages.dev) automatically.",
   "when": {
     "type": "fileEdited",
     "patterns": [
@@ -15,12 +15,11 @@
       "**/*.json",
       "**/*.md",
       "**/*.txt",
-      "**/*.bat",
       "**/*.html"
     ]
   },
   "then": {
     "type": "askAgent",
-    "prompt": "A source file was just saved in the SentimentAI project. Run these steps using the execute_pwsh tool:\n\nStep 1 — Stage all changes:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n\nStep 2 — Check if there are staged changes:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" diff --cached --quiet\n\nStep 3 — If there ARE staged changes (exit code 1), commit and push:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"auto: sync from Kiro IDE\"\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n\nIf no changes exist (exit code 0), do nothing. The post-commit hook will auto-push. Do not ask for confirmation."
+    "prompt": "A source file was just saved in the InsightPulse project. Run these steps using the execute_pwsh tool:\n\nStep 1 — Stage all changes:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n\nStep 2 — Check if there are staged changes:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" diff --cached --quiet\n\nStep 3 — If there ARE staged changes (exit code non-zero), commit and push:\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"auto: sync from Kiro IDE\"\ngit -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n\nAfter a successful push, inform the user: 'Pushed to GitHub. GitHub Actions is now building and deploying to https://insightpulse.pages.dev via Cloudflare Pages (~60 seconds).'\n\nIf no changes exist, do nothing silently."
   }
 }

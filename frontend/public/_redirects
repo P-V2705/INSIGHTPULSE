@@ -1,0 +1,6 @@
+# Proxy all /api/* requests to the backend (Cloudflare Pages proxy)
+# BACKEND_URL is set as an environment variable in Cloudflare Pages dashboard
+/api/* https://insightpulse-ja7r.onrender.com/api/:splat 200
+
+# SPA fallback — all non-asset paths resolve to index.html
+/* /index.html 200

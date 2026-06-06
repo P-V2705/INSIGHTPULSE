@@ -6,7 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # ── Frontend build check ────────────────────────────────────────────────────
   frontend:
     name: Frontend — Build Check
     runs-on: ubuntu-latest
@@ -29,10 +34,17 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_URL: ""
+          NODE_ENV: production
 
+      - name: Verify build output
+        run: |
+          ls -la dist/
+          test -f dist/index.html && echo "✅ index.html present" || exit 1
+
+  # ── Backend import & smoke test ─────────────────────────────────────────────
   backend:
-    name: Backend — Import Check
+    name: Backend — Import & Smoke Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,11 +57,12 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
-      - name: Install
+      - name: Install dependencies
         run: pip install -r requirements.txt --quiet
 
-      - name: NLTK data
+      - name: Download NLTK data
         run: |
           python -c "
           import nltk
@@ -57,12 +70,20 @@ jobs:
               nltk.download(p, quiet=True)
           "
 
-      - name: Smoke test
+      - name: Smoke test — NLP engine
         run: |
           python -c "
           from services.nlp_engine import vader_sentiment, build_concise_summary
           from services.dataset_processor import load_dataset, detect_columns
           r = vader_sentiment('This product is amazing!')
-          assert r['label'] == 'Positive'
-          print('OK:', r['label'])
+          assert r['label'] == 'Positive', f'Expected Positive, got {r[\"label\"]}'
+          print('✅ NLP engine OK:', r['label'])
+          "
+
+      - name: Smoke test — FastAPI app imports
+        run: |
+          python -c "
+          from main import app
+          assert app.title == 'InsightPulse API'
+          print('✅ FastAPI app loads OK')
           "
