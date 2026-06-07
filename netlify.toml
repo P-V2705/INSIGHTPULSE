@@ -1,0 +1,89 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# InsightPulse — Netlify Production Configuration
+# Site:    ana-pulse.netlify.app
+# Site ID: 3df6f028-cca6-4c87-952c-1ebac20409a9
+# Repo:    https://github.com/P-V2705/INSIGHTPULSE
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Build ──────────────────────────────────────────────────────────────────────
+[build]
+  base    = "frontend"
+  command = "npm install --legacy-peer-deps && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION  = "20"
+  NODE_ENV      = "production"
+  # VITE_API_URL is intentionally empty — production uses the /api/* proxy below.
+  # Set VITE_API_URL only for preview/dev branches if needed.
+  VITE_API_URL  = ""
+
+# ── Context: production branch (main) ─────────────────────────────────────────
+[context.production]
+  command = "npm install --legacy-peer-deps && npm run build"
+
+[context.production.environment]
+  NODE_ENV     = "production"
+  VITE_API_URL = ""
+
+# ── Context: deploy previews (PRs) ────────────────────────────────────────────
+[context.deploy-preview]
+  command = "npm install --legacy-peer-deps && npm run build"
+
+# ── API proxy — transparent reverse proxy to Render backend ───────────────────
+# The frontend always calls relative /api/* paths.
+# Netlify fetches the backend response and returns it to the browser (status=200).
+# No backend URL is baked into the JS bundle.
+[[redirects]]
+  from   = "/api/*"
+  to     = "https://insightpulse-ja7r.onrender.com/api/:splat"
+  status = 200
+  force  = true
+
+  [redirects.headers]
+    X-Forwarded-Host = "ana-pulse.netlify.app"
+
+# ── SPA fallback — all non-asset paths → index.html ───────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# ── Security headers (all routes) ─────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    X-XSS-Protection       = "1; mode=block"
+    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://insightpulse-ja7r.onrender.com;"
+
+# ── Cache static assets aggressively ──────────────────────────────────────────
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ── HTML — never cache (ensure users always get latest version) ────────────────
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

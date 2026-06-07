@@ -1,6 +1,12 @@
-# Proxy all /api/* requests to the backend (Cloudflare Pages proxy)
-# BACKEND_URL is set as an environment variable in Cloudflare Pages dashboard
-/api/* https://insightpulse-ja7r.onrender.com/api/:splat 200
+# ── InsightPulse — Netlify _redirects ────────────────────────────────────────
+# This file is the production routing config for ana-pulse.netlify.app
+#
+# NOTE: netlify.toml takes precedence over this file for redirect rules.
+# This file acts as a fallback and ensures SPA routing works even without
+# netlify.toml being processed (e.g. in some edge cases).
 
-# SPA fallback — all non-asset paths resolve to index.html
-/* /index.html 200
+# Proxy /api/* → Render backend (transparent — browser stays on ana-pulse.netlify.app)
+/api/*  https://insightpulse-ja7r.onrender.com/api/:splat  200
+
+# SPA fallback — all unmatched paths serve index.html (React Router handles routing)
+/*      /index.html     200

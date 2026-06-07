@@ -2,13 +2,14 @@
 ### Advanced AI-Powered Customer Sentiment Analysis System
 
 [![CI](https://github.com/P-V2705/INSIGHTPULSE/actions/workflows/ci.yml/badge.svg)](https://github.com/P-V2705/INSIGHTPULSE/actions)
-[![Deploy](https://github.com/P-V2705/INSIGHTPULSE/actions/workflows/deploy.yml/badge.svg)](https://github.com/P-V2705/INSIGHTPULSE/actions)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/3df6f028-cca6-4c87-952c-1ebac20409a9/deploy-status)](https://ana-pulse.netlify.app)
 
 ---
 
-## Live Demo
-**Frontend:** [https://insightpulse.pages.dev](https://insightpulse.pages.dev)  
-**Backend API:** [https://insightpulse-ja7r.onrender.com/api/health](https://insightpulse-ja7r.onrender.com/api/health)
+## Live Site
+**Frontend:** [https://ana-pulse.netlify.app](https://ana-pulse.netlify.app)  
+**Backend API:** [https://insightpulse-ja7r.onrender.com/api/health](https://insightpulse-ja7r.onrender.com/api/health)  
+**API Docs:** [https://insightpulse-ja7r.onrender.com/api/docs](https://insightpulse-ja7r.onrender.com/api/docs)
 
 ---
 
@@ -18,54 +19,57 @@
 User Browser
      │
      ▼
-Cloudflare Pages (insightpulse.pages.dev)
-  React 18 + Vite SPA — global CDN edge delivery
+Netlify CDN  (ana-pulse.netlify.app)
+  React 18 + Vite SPA — global CDN delivery
      │
-     │  /api/*  (_redirects proxy — transparent, no URL in JS bundle)
+     │  /api/*  (netlify.toml transparent proxy)
      ▼
-Render (insightpulse-ja7r.onrender.com)
+Render  (insightpulse-ja7r.onrender.com)
   FastAPI + Python 3.11 — NLTK / pandas / scikit-learn
 ```
 
 The frontend always calls **relative `/api/...` paths**.  
-Cloudflare Pages' `_redirects` file proxies those requests to the Render backend.  
+`netlify.toml` proxies those to Render with `status=200, force=true`.  
 No backend URL is ever baked into the JavaScript bundle.
 
 ---
 
-## CI/CD Pipeline
+## CI/CD Pipeline: Kiro → GitHub → Netlify
 
 ```
-Developer edits in Kiro
+Kiro IDE (edit + save)
          │
-         ▼  (auto_deploy.ps1 or manual git push)
-  GitHub — P-V2705/INSIGHTPULSE
+         │  auto_deploy.ps1  OR  Kiro hook "Auto Push on Save"
+         ▼
+  GitHub  (P-V2705/INSIGHTPULSE  /  branch: main)
          │
-         ├── CI workflow (ci.yml)   → frontend build + backend smoke test
+         ├─ CI workflow (ci.yml)        → frontend build + backend smoke test
          │
-         └── CD workflow (deploy.yml) → Cloudflare Pages deploy
+         └─ CD workflow (deploy.yml)    → Netlify production deploy
                   │
                   ▼
-         https://insightpulse.pages.dev  ← live in ~60 seconds
+    https://ana-pulse.netlify.app   ← live in ~90 seconds
 ```
+
+**Netlify Site ID:** `3df6f028-cca6-4c87-952c-1ebac20409a9`
 
 ---
 
 ## Tech Stack
 
-| Layer        | Technology                                        |
-|--------------|---------------------------------------------------|
-| Frontend     | React 18, Vite 5, Tailwind CSS, Recharts          |
-| Hosting      | Cloudflare Pages (global CDN)                     |
-| Backend      | Python 3.11, FastAPI, Uvicorn                     |
-| Backend Host | Render                                            |
-| NLP          | NLTK, TextBlob, scikit-learn                      |
-| Export       | ReportLab (PDF), CSV, JSON                        |
-| CI/CD        | GitHub Actions → Cloudflare Pages (auto-deploy)   |
+| Layer        | Technology                                           |
+|--------------|------------------------------------------------------|
+| Frontend     | React 18, Vite 5, Tailwind CSS, Recharts             |
+| Hosting      | Netlify (CDN + proxy + auto-deploy)                  |
+| Backend      | Python 3.11, FastAPI, Uvicorn                        |
+| Backend Host | Render                                               |
+| NLP          | NLTK, TextBlob, scikit-learn                         |
+| Export       | ReportLab (PDF), CSV, JSON                           |
+| CI/CD        | GitHub Actions → Netlify (automatic on every push)   |
 
 ---
 
-## Quick Start (Local Development)
+## Quick Start (Local)
 
 ### 1. Backend
 ```bash
@@ -84,90 +88,35 @@ npm install
 npm run dev                  # http://localhost:3000
 ```
 
-The Vite dev proxy in `vite.config.js` forwards `/api/*` to `localhost:8000`.
+Vite's dev proxy in `vite.config.js` forwards `/api/*` to `localhost:8000`.
 
 ---
 
-## Production Deployment Guide
+## Production Deployment
 
-### Step 1 — Backend on Render (already configured)
+### GitHub Secrets Required
 
-The `render.yaml` file at the repo root configures the Render web service.  
-If re-deploying from scratch:
+Go to **GitHub → P-V2705/INSIGHTPULSE → Settings → Secrets → Actions** and add:
 
-1. Go to [render.com](https://render.com) → **New** → **Web Service**
-2. Connect `P-V2705/INSIGHTPULSE`
-3. Root dir: `backend` | Build: `pip install -r requirements.txt && python download_nltk.py` | Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Copy the deployed URL (e.g. `https://insightpulse-ja7r.onrender.com`)
-
----
-
-### Step 2 — Frontend on Cloudflare Pages
-
-1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages**
-2. Connect GitHub → select `P-V2705/INSIGHTPULSE`
-3. Build settings:
-   - **Framework preset:** None (custom)
-   - **Root directory:** `frontend`
-   - **Build command:** `npm install --legacy-peer-deps && npm run build`
-   - **Build output directory:** `dist`
-4. Environment variables (Production):
-   - `NODE_VERSION` = `20`
-   - `VITE_API_URL` = *(leave blank — production uses _redirects proxy)*
-5. Click **Save and Deploy**
-
-> The `_redirects` file in `frontend/public/` is automatically picked up by Cloudflare Pages and proxies `/api/*` to Render.
-
----
-
-### Step 3 — GitHub Secrets (for CI/CD auto-deploy via GitHub Actions)
-
-Go to **GitHub repo → Settings → Secrets and variables → Actions** and add:
-
-| Secret | Where to find it |
+| Secret | Value |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template (add Pages permission) |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Dashboard → right sidebar when logged in |
+| `NETLIFY_AUTH_TOKEN` | Netlify → User Settings → Applications → Personal access tokens |
+| `NETLIFY_SITE_ID` | `3df6f028-cca6-4c87-952c-1ebac20409a9` |
+| `NETLIFY_BUILD_HOOK` | Netlify → ana-pulse → Site configuration → Build hooks → URL (optional backup trigger) |
 
-> **VITE_API_URL** secret is no longer needed — the production build leaves it blank intentionally.
+### How deployment works
 
----
+1. You save a file in Kiro
+2. The **Auto Push on Save** Kiro hook (or `auto_deploy.ps1`) stages, commits, and pushes to GitHub
+3. GitHub Actions runs `ci.yml` (build check) then `deploy.yml` (Netlify deploy)
+4. `nwtgck/actions-netlify@v3` builds and deploys to production
+5. Site is live at **https://ana-pulse.netlify.app** in ~90 seconds
 
-### Step 4 — Auto-deploy from Kiro
-
-Run `auto_deploy.ps1` from the project root to stage, commit, push, and trigger the full pipeline:
+### One-click deploy from Kiro
 
 ```powershell
-.\auto_deploy.ps1 -Message "feat: my change description"
+.\auto_deploy.ps1 -Message "feat: my change"
 ```
-
-Or just double-click it in Explorer (runs with default message).
-
----
-
-## Custom Domain (optional)
-
-1. Cloudflare Dashboard → Pages → insightpulse → **Custom domains** → **Set up a custom domain**
-2. Enter your domain (e.g. `app.insightpulse.ai`)
-3. Cloudflare auto-provisions SSL and configures DNS if your domain is on Cloudflare
-4. Update `FRONTEND_ORIGIN` env var on Render to your custom domain for CORS
-
----
-
-## Features
-
-- **File upload** — CSV, Excel, JSON, PDF, Word, TXT, TSV — no size limit
-- **Full NLP pipeline** — tokenization, lemmatization, VADER + TextBlob sentiment
-- **Emotion detection** — 8 emotion categories
-- **Keyword extraction** — TF-IDF top terms
-- **Topic modeling** — KMeans clustering
-- **AI consultation** — structured headline + insight + action + flags
-- **Quality prediction** — Excellent / Good / Average / Poor / Bad
-- **Fake review detection** — heuristic suspicion scoring
-- **Category breakdown** — per-category sentiment chart
-- **Interactive dashboard** — pie, bar, line, rating, category charts + keyword cloud
-- **PDF + CSV + JSON export**
-- **Mobile-responsive** — full hamburger nav on small screens
 
 ---
 
@@ -175,29 +124,50 @@ Or just double-click it in Explorer (runs with default message).
 
 ```
 sentiment-ai-platform/
-├── wrangler.toml                # Cloudflare Pages configuration
-├── render.yaml                  # Render backend deploy config
-├── auto_deploy.ps1              # Kiro → GitHub → Cloudflare one-click deploy
+├── netlify.toml                 # Netlify build + /api/* proxy + headers
+├── render.yaml                  # Render backend config
+├── auto_deploy.ps1              # Kiro → GitHub → Netlify one-click deploy
 ├── .github/workflows/
-│   ├── ci.yml                   # Build + smoke test on every push/PR
-│   └── deploy.yml               # Auto-deploy to Cloudflare Pages on main push
+│   ├── ci.yml                   # Build check + smoke test (push + PR)
+│   └── deploy.yml               # Auto-deploy to Netlify on main push
+├── .kiro/hooks/
+│   ├── auto-push-on-save.json   # Auto-commit + push when any file is saved
+│   └── deploy-now.json          # Manual deploy trigger button
 ├── backend/
-│   ├── Procfile                 # Render/Heroku start command
+│   ├── Procfile                 # Render start command
 │   ├── runtime.txt              # Python 3.11
 │   ├── core/config.py
 │   ├── routers/                 # upload, analysis, dashboard, export
 │   ├── services/                # nlp_engine, analysis_engine, dataset_processor, export_service
-│   ├── main.py
+│   ├── main.py                  # FastAPI app + CORS + security headers
 │   └── requirements.txt
 └── frontend/
     ├── public/
-    │   ├── _redirects           # Cloudflare Pages: /api/* proxy + SPA fallback
-    │   └── _headers             # Security + cache headers
+    │   ├── _redirects           # Netlify: /api/* proxy + SPA fallback (backup)
+    │   └── _headers             # Netlify: security + cache headers (backup)
     ├── src/
-    │   ├── pages/               # HomePage, UploadPage, AnalysisPage, DashboardPage
-    │   ├── components/          # Navbar (with mobile menu)
-    │   ├── context/             # AppContext
-    │   └── utils/api.js         # All axios calls — always uses relative /api path
-    ├── vite.config.js           # Dev proxy + production build config
+    │   ├── pages/
+    │   ├── components/
+    │   ├── context/
+    │   └── utils/api.js         # All axios calls — relative /api/* only
+    ├── .env.example
+    ├── .npmrc                   # legacy-peer-deps=true
+    ├── vite.config.js           # Dev proxy + production code splitting
     └── tailwind.config.js
 ```
+
+---
+
+## Features
+
+- File upload — CSV, Excel, JSON, PDF, Word, TXT, TSV — no size limit
+- Full NLP pipeline — VADER + TextBlob sentiment analysis
+- Emotion detection — 8 emotion categories
+- Keyword extraction — TF-IDF
+- Topic modeling — KMeans clustering
+- AI consultation — headline + insight + action items
+- Quality prediction — Excellent / Good / Average / Poor / Bad
+- Fake review detection — heuristic scoring
+- Interactive dashboard — pie, bar, line, rating, category charts + keyword cloud
+- PDF + CSV + JSON export
+- Mobile-responsive UI

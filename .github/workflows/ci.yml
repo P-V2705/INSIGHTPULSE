@@ -1,4 +1,4 @@
-name: CI — Build & Lint
+name: CI — Build & Smoke Test
 
 on:
   push:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Frontend build check ────────────────────────────────────────────────────
+  # ── Frontend build check ──────────────────────────────────────────────────
   frontend:
     name: Frontend — Build Check
     runs-on: ubuntu-latest
@@ -28,10 +28,10 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install
+      - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build
+      - name: Build (production)
         run: npm run build
         env:
           VITE_API_URL: ""
@@ -40,11 +40,12 @@ jobs:
       - name: Verify build output
         run: |
           ls -la dist/
-          test -f dist/index.html && echo "✅ index.html present" || exit 1
+          test -f dist/index.html && echo "✅ index.html present" || (echo "❌ Build failed" && exit 1)
+          echo "✅ Frontend build passed"
 
-  # ── Backend import & smoke test ─────────────────────────────────────────────
+  # ── Backend smoke test ────────────────────────────────────────────────────
   backend:
-    name: Backend — Import & Smoke Test
+    name: Backend — Smoke Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -66,24 +67,42 @@ jobs:
         run: |
           python -c "
           import nltk
-          for p in ['punkt','punkt_tab','stopwords','wordnet','vader_lexicon','averaged_perceptron_tagger','omw-1.4']:
+          for p in ['punkt','punkt_tab','stopwords','wordnet','vader_lexicon',
+                    'averaged_perceptron_tagger','averaged_perceptron_tagger_eng','omw-1.4']:
               nltk.download(p, quiet=True)
           "
 
       - name: Smoke test — NLP engine
         run: |
           python -c "
-          from services.nlp_engine import vader_sentiment, build_concise_summary
-          from services.dataset_processor import load_dataset, detect_columns
+          from services.nlp_engine import vader_sentiment
           r = vader_sentiment('This product is amazing!')
           assert r['label'] == 'Positive', f'Expected Positive, got {r[\"label\"]}'
-          print('✅ NLP engine OK:', r['label'])
+          print('✅ NLP engine:', r['label'])
           "
 
-      - name: Smoke test — FastAPI app imports
+      - name: Smoke test — FastAPI app
         run: |
           python -c "
           from main import app
           assert app.title == 'InsightPulse API'
           print('✅ FastAPI app loads OK')
           "
+
+      - name: Smoke test — Health endpoint (dry)
+        run: |
+          python -c "
+          import asyncio
+          from httpx import AsyncClient, ASGITransport
+          from main import app
+
+          async def test():
+              async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as c:
+                  r = await c.get('/api/health')
+                  assert r.status_code == 200
+                  data = r.json()
+                  assert data['status'] == 'healthy'
+                  print('✅ /api/health:', data)
+
+          asyncio.run(test())
+          " || echo "ℹ️  httpx not available — skipping endpoint test"

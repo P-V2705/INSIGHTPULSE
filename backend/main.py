@@ -25,41 +25,46 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    # Disable OpenAPI JSON in production via env flag if desired
     openapi_url="/api/openapi.json",
 )
 
-# ── Trusted hosts (prevent Host-header injection) ─────────────────────────────
-# In production, Render injects the real hostname; allow localhost for dev.
-ALLOWED_HOSTS = os.getenv(
-    "ALLOWED_HOSTS",
-    "insightpulse-ja7r.onrender.com,localhost,127.0.0.1,*.onrender.com",
-).split(",")
-
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])  # Render sits behind a proxy
+# ── Trusted hosts ─────────────────────────────────────────────────────────────
+# Allow all hosts — Render sits behind its own proxy which handles host validation.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# All /api/* calls arrive from Cloudflare Pages proxy (same-origin relative URLs).
-# We restrict allowed origins to our known frontend hosts; wildcard only for dev.
-_CF_ORIGIN = os.getenv("FRONTEND_ORIGIN", "")
+# All /api/* calls arrive from Netlify's proxy (same-origin — browser sends
+# no cross-origin headers). We whitelist our known origins for direct API access
+# (e.g. local dev, Netlify previews) and the production Netlify domain.
+_EXTRA_ORIGIN = os.getenv("FRONTEND_ORIGIN", "")
+
 CORS_ORIGINS = [
-    "https://insightpulse.pages.dev",
+    # Production Netlify site
+    "https://ana-pulse.netlify.app",
+    # Local development
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://127.0.0.1:3000",
 ]
-if _CF_ORIGIN and _CF_ORIGIN not in CORS_ORIGINS:
-    CORS_ORIGINS.append(_CF_ORIGIN)
+
+# Allow Netlify deploy-preview URLs dynamically
+_NETLIFY_SUBDOMAIN = os.getenv("NETLIFY_SITE_SUBDOMAIN", "ana-pulse")
+
+# Add any extra origin from env (custom domain, etc.)
+if _EXTRA_ORIGIN and _EXTRA_ORIGIN not in CORS_ORIGINS:
+    CORS_ORIGINS.append(_EXTRA_ORIGIN)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=False,          # no cookies → credentials=False is safer
+    allow_origin_regex=r"https://deploy-preview-\d+--ana-pulse\.netlify\.app",
+    allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept", "Authorization"],
-    max_age=600,                       # pre-flight cache 10 min
+    allow_headers=["Content-Type", "Accept", "Authorization", "X-Forwarded-Host"],
+    max_age=600,
 )
 
-# ── Request logging + timing middleware ───────────────────────────────────────
+# ── Request logging middleware ────────────────────────────────────────────────
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
@@ -71,7 +76,7 @@ async def log_requests(request: Request, call_next):
     )
     return response
 
-# ── Security headers middleware ────────────────────────────────────────────────
+# ── Security headers middleware ───────────────────────────────────────────────
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -95,15 +100,21 @@ async def root():
         "version": "2.0.0",
         "status": "operational",
         "docs": "/api/docs",
+        "frontend": "https://ana-pulse.netlify.app",
     }
 
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "InsightPulse Backend", "version": "2.0.0"}
+    return {
+        "status": "healthy",
+        "service": "InsightPulse Backend",
+        "version": "2.0.0",
+        "frontend": "https://ana-pulse.netlify.app",
+    }
 
 
-# ── Entry point (local dev only) ───────────────────────────────────────────────
+# ── Local dev entry point ─────────────────────────────────────────────────────
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

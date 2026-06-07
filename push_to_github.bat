@@ -28,18 +28,18 @@ if %ERRORLEVEL% EQU 0 (
     echo   SUCCESS! Code pushed to GitHub.
     echo ============================================================
     echo.
-    echo Next steps:
-    echo  1. Go to dash.cloudflare.com ^> Workers ^& Pages ^> Create ^> Pages
-    echo  2. Connect GitHub and select your repo
-    echo  3. Build settings:
-    echo     - Root directory: frontend
-    echo     - Build command:  npm install --legacy-peer-deps ^&^& npm run build
-    echo     - Output dir:     dist
-    echo  4. Add GitHub secrets: CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
-    echo     (Settings ^> Secrets and variables ^> Actions)
+    echo Next steps — Netlify setup:
+    echo  1. Go to app.netlify.com ^> Add new site ^> Import from Git
+    echo  2. Connect GitHub ^> select your repo
+    echo  3. Build settings (auto-detected from netlify.toml):
+    echo     - Base dir:     frontend
+    echo     - Build cmd:    npm install --legacy-peer-deps ^&^& npm run build
+    echo     - Publish dir:  dist
+    echo  4. Add GitHub Secrets (Settings ^> Secrets ^> Actions):
+    echo     - NETLIFY_AUTH_TOKEN  ^(Netlify User Settings ^> Applications^)
+    echo     - NETLIFY_SITE_ID     3df6f028-cca6-4c87-952c-1ebac20409a9
     echo.
-    echo  Cloudflare Pages will auto-deploy on every push to main!
-    echo  Live at: https://insightpulse.pages.dev
+    echo  Live at: https://ana-pulse.netlify.app
     echo.
 ) else (
     echo.

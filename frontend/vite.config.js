@@ -4,8 +4,8 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  // In dev, proxy /api → local backend (or VITE_API_URL if set)
-  // In production (Cloudflare Pages), _redirects handles /api/* proxying — no bundled URL.
+  // In dev, proxy /api → local backend (or VITE_API_URL if set).
+  // In production (Netlify): netlify.toml proxy handles /api/* — no URL in JS bundle.
   const apiTarget = env.VITE_API_URL || 'http://localhost:8000'
 
   return {
@@ -36,29 +36,28 @@ export default defineConfig(({ mode }) => {
 
     build: {
       outDir: 'dist',
-      sourcemap: false,        // disable in production for security + smaller bundle
-      minify: 'esbuild',       // fastest minifier; terser not needed at this scale
-      target: 'es2020',        // modern browsers — Cloudflare CDN handles legacy users
+      sourcemap: false,       // disabled in production — smaller bundle, no source exposure
+      minify: 'esbuild',      // fastest + smallest; esbuild is Vite's default
+      target: 'es2020',       // all modern browsers supported by Netlify CDN
 
-      // ── Code splitting ────────────────────────────────────────────────────
       rollupOptions: {
         output: {
+          // ── Vendor code splitting ──────────────────────────────────────
+          // Splits vendor libs into separate chunks so browsers can cache them
+          // independently from app code. Netlify's CDN serves them with
+          // immutable Cache-Control (set in netlify.toml / _headers).
           manualChunks: {
-            // Vendor chunk: React core
-            react: ['react', 'react-dom', 'react-router-dom'],
-            // Charts chunk: heavy, rarely changes
+            react:  ['react', 'react-dom', 'react-router-dom'],
             charts: ['recharts'],
-            // Animation/UI
-            ui: ['framer-motion', 'lucide-react'],
+            ui:     ['framer-motion', 'lucide-react'],
           },
-          // Content-hash filenames for Cloudflare CDN long-term caching
-          chunkFileNames:  'assets/[name]-[hash].js',
-          entryFileNames:  'assets/[name]-[hash].js',
-          assetFileNames:  'assets/[name]-[hash][extname]',
+          // Content-hash filenames → safe for max-age=31536000, immutable
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
         },
       },
 
-      // Warn if any single chunk exceeds 800 KB (budgeting)
       chunkSizeWarningLimit: 800,
     },
   }

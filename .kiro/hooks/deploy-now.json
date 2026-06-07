@@ -1,12 +1,12 @@
 {
-  "name": "Deploy to Cloudflare Pages Now",
-  "version": "1.1.0",
-  "description": "Manually trigger: commit all changes and push to GitHub, which triggers GitHub Actions to build and deploy to Cloudflare Pages (insightpulse.pages.dev).",
+  "name": "Deploy to Netlify Now",
+  "version": "2.0.0",
+  "description": "Manually trigger: commit all pending changes and push to GitHub, which triggers GitHub Actions to build and deploy to Netlify (ana-pulse.netlify.app).",
   "when": {
     "type": "userTriggered"
   },
   "then": {
     "type": "askAgent",
-    "prompt": "The user wants to deploy now to Cloudflare Pages. Execute these steps using execute_pwsh:\n\n1. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n2. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"deploy: manual trigger from Kiro IDE\" (skip if nothing to commit)\n3. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n4. Inform the user: 'Pushed to GitHub! GitHub Actions is now building the frontend and deploying to Cloudflare Pages. Monitor progress at: https://github.com/P-V2705/INSIGHTPULSE/actions — live at https://insightpulse.pages.dev in ~60 seconds.'"
+    "prompt": "The user wants to deploy InsightPulse to Netlify right now. Execute these steps using execute_pwsh:\n\n1. git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" add -A\n2. Check if there are staged changes with: git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" diff --cached --quiet\n3. If there are changes (non-zero exit), commit: git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" commit -m \"deploy: manual trigger from Kiro IDE\"\n4. Push: git -C \"C:\\Users\\prade\\OneDrive\\Desktop\\InsightPulse\\sentiment-ai-platform\" push origin main\n5. After successful push, tell the user:\n   'Deployed! GitHub Actions is building and pushing to Netlify.\n   Monitor CI/CD: https://github.com/P-V2705/INSIGHTPULSE/actions\n   Live in ~90 seconds: https://ana-pulse.netlify.app\n   Netlify deploy log: https://app.netlify.com/sites/ana-pulse/deploys'"
   }
 }

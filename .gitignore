@@ -24,10 +24,11 @@ backend/nltk_data/
 backend/uploads/
 backend/exports/
 
-# Environment files — never commit secrets
+# ── Secrets & environment — NEVER commit these ────────────────────────────────
 .env
 .env.*
 !.env.example
+.dev.vars
 
 # ── Node / Frontend ───────────────────────────────────────────────────────────
 frontend/node_modules/
@@ -35,9 +36,8 @@ frontend/dist/
 frontend/.vite/
 *.local
 
-# ── Cloudflare ────────────────────────────────────────────────────────────────
-.wrangler/
-.dev.vars
+# ── Netlify ───────────────────────────────────────────────────────────────────
+.netlify/
 
 # ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store

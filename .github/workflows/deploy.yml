@@ -1,4 +1,4 @@
-name: CD — Deploy to Cloudflare Pages
+name: CD — Deploy to Netlify (ana-pulse.netlify.app)
 
 on:
   push:
@@ -10,15 +10,15 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build & Deploy to Cloudflare Pages
+    name: Build & Deploy → ana-pulse.netlify.app
     runs-on: ubuntu-latest
 
     steps:
-      # ── Checkout ────────────────────────────────────────────────────────────
-      - name: Checkout
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── Node.js ─────────────────────────────────────────────────────────────
+      # ── Node.js ───────────────────────────────────────────────────────────
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -26,34 +26,66 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      # ── Install dependencies ─────────────────────────────────────────────────
+      # ── Install ───────────────────────────────────────────────────────────
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install --legacy-peer-deps
 
-      # ── Build ────────────────────────────────────────────────────────────────
-      - name: Build frontend
+      # ── Build ─────────────────────────────────────────────────────────────
+      - name: Build frontend (production)
         working-directory: frontend
         run: npm run build
         env:
-          # VITE_API_URL is intentionally left blank for production.
-          # The frontend always calls relative /api/* paths; Cloudflare Pages
-          # _redirects proxies those to the Render backend.
+          # Intentionally blank — netlify.toml proxy handles /api/* in production.
           VITE_API_URL: ""
           NODE_ENV: production
 
-      # ── Deploy to Cloudflare Pages ────────────────────────────────────────────
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy frontend/dist --project-name=insightpulse --commit-dirty=true
+      # ── Verify build output ────────────────────────────────────────────────
+      - name: Verify dist exists
+        working-directory: frontend
+        run: |
+          ls -la dist/
+          test -f dist/index.html && echo "✅ index.html present" || (echo "❌ index.html missing" && exit 1)
 
-      # ── Deployment summary ───────────────────────────────────────────────────
+      # ── Deploy to Netlify ─────────────────────────────────────────────────
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: './frontend/dist'
+          production-branch: main
+          production-deploy: true
+          deploy-message: "CD: ${{ github.event.head_commit.message }} (${{ github.sha }})"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 10
+
+      # ── Backup: ping build hook ────────────────────────────────────────────
+      # Triggers a direct Netlify build as a fallback in case the action deploy fails.
+      - name: Ping Netlify build hook (backup trigger)
+        if: always()
+        run: |
+          if [ -n "${{ secrets.NETLIFY_BUILD_HOOK }}" ]; then
+            curl -s -X POST "${{ secrets.NETLIFY_BUILD_HOOK }}" -d "{}" \
+              -H "Content-Type: application/json" || true
+            echo "✅ Netlify build hook pinged"
+          else
+            echo "ℹ️  NETLIFY_BUILD_HOOK not set — skipping backup trigger"
+          fi
+
+      # ── Summary ────────────────────────────────────────────────────────────
       - name: Deployment summary
         if: success()
         run: |
-          echo "✅ Deployment complete!"
-          echo "🌍 Live at: https://insightpulse.pages.dev"
-          echo "   (or your custom domain if configured in Cloudflare dashboard)"
+          echo ""
+          echo "╔══════════════════════════════════════════╗"
+          echo "║   ✅  DEPLOYMENT SUCCESSFUL               ║"
+          echo "║   🌍  https://ana-pulse.netlify.app       ║"
+          echo "╚══════════════════════════════════════════╝"
+          echo ""
+          echo "Commit : ${{ github.sha }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
+          echo "Author : ${{ github.event.head_commit.author.name }}"
