@@ -24,3 +24,6 @@ pillow==12.2.0
 
 # Utilities
 requests==2.34.2
+
+# Testing / CI health checks
+httpx==0.28.1

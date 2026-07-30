@@ -40,15 +40,16 @@ jobs:
           VITE_API_URL: ""
           NODE_ENV: production
 
-      # ── Verify build output ────────────────────────────────────────────────
-      - name: Verify dist exists
+      # ── Verify ────────────────────────────────────────────────────────────
+      - name: Verify build output
         working-directory: frontend
         run: |
           ls -la dist/
-          test -f dist/index.html && echo "✅ index.html present" || (echo "❌ index.html missing" && exit 1)
+          test -f dist/index.html && echo "✅ dist/index.html present" || (echo "❌ Missing" && exit 1)
 
       # ── Deploy to Netlify ─────────────────────────────────────────────────
       - name: Deploy to Netlify
+        id: netlify-deploy
         uses: nwtgck/actions-netlify@v3
         with:
           publish-dir: './frontend/dist'
@@ -63,29 +64,31 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         timeout-minutes: 10
 
-      # ── Backup: ping build hook ────────────────────────────────────────────
-      # Triggers a direct Netlify build as a fallback in case the action deploy fails.
-      - name: Ping Netlify build hook (backup trigger)
+      # ── Backup build hook (always runs, even on deploy step failure) ──────
+      - name: Ping Netlify build hook (backup)
         if: always()
+        env:
+          BUILD_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
         run: |
-          if [ -n "${{ secrets.NETLIFY_BUILD_HOOK }}" ]; then
-            curl -s -X POST "${{ secrets.NETLIFY_BUILD_HOOK }}" -d "{}" \
-              -H "Content-Type: application/json" || true
-            echo "✅ Netlify build hook pinged"
+          if [ -n "$BUILD_HOOK" ]; then
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BUILD_HOOK" \
+              -H "Content-Type: application/json" -d "{}")
+            echo "✅ Build hook response: HTTP $STATUS"
           else
-            echo "ℹ️  NETLIFY_BUILD_HOOK not set — skipping backup trigger"
+            echo "ℹ️  NETLIFY_BUILD_HOOK not configured — skipping backup trigger"
           fi
 
-      # ── Summary ────────────────────────────────────────────────────────────
+      # ── Deployment summary ────────────────────────────────────────────────
       - name: Deployment summary
         if: success()
         run: |
           echo ""
-          echo "╔══════════════════════════════════════════╗"
-          echo "║   ✅  DEPLOYMENT SUCCESSFUL               ║"
-          echo "║   🌍  https://ana-pulse.netlify.app       ║"
-          echo "╚══════════════════════════════════════════╝"
+          echo "╔════════════════════════════════════════════╗"
+          echo "║   ✅  DEPLOYMENT SUCCESSFUL                 ║"
+          echo "║   🌍  https://ana-pulse.netlify.app         ║"
+          echo "╚════════════════════════════════════════════╝"
           echo ""
           echo "Commit : ${{ github.sha }}"
           echo "Message: ${{ github.event.head_commit.message }}"
           echo "Author : ${{ github.event.head_commit.author.name }}"
+          echo "Deploy : https://app.netlify.com/sites/ana-pulse/deploys"

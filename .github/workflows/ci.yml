@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Frontend build check ──────────────────────────────────────────────────
+  # ── Frontend build check ────────────────────────────────────────────────────
   frontend:
     name: Frontend — Build Check
     runs-on: ubuntu-latest
@@ -20,9 +20,11 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -39,11 +41,12 @@ jobs:
 
       - name: Verify build output
         run: |
+          echo "--- Build contents ---"
           ls -la dist/
-          test -f dist/index.html && echo "✅ index.html present" || (echo "❌ Build failed" && exit 1)
-          echo "✅ Frontend build passed"
+          test -f dist/index.html || (echo "❌ dist/index.html missing" && exit 1)
+          echo "✅ Frontend build passed — dist/index.html present"
 
-  # ── Backend smoke test ────────────────────────────────────────────────────
+  # ── Backend smoke test ──────────────────────────────────────────────────────
   backend:
     name: Backend — Smoke Test
     runs-on: ubuntu-latest
@@ -52,9 +55,11 @@ jobs:
         working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -65,44 +70,78 @@ jobs:
 
       - name: Download NLTK data
         run: |
-          python -c "
+          python - <<'EOF'
           import nltk
-          for p in ['punkt','punkt_tab','stopwords','wordnet','vader_lexicon',
-                    'averaged_perceptron_tagger','averaged_perceptron_tagger_eng','omw-1.4']:
-              nltk.download(p, quiet=True)
-          "
+          packages = [
+              'punkt', 'punkt_tab', 'stopwords', 'wordnet',
+              'vader_lexicon', 'averaged_perceptron_tagger',
+              'averaged_perceptron_tagger_eng', 'omw-1.4',
+          ]
+          for p in packages:
+              try:
+                  nltk.download(p, quiet=True)
+                  print(f'  OK: {p}')
+              except Exception as e:
+                  print(f'  WARN (non-fatal): {p} — {e}')
+          print('NLTK data download complete.')
+          EOF
 
-      - name: Smoke test — NLP engine
+      - name: Smoke test — NLP sentiment
         run: |
-          python -c "
+          python - <<'EOF'
           from services.nlp_engine import vader_sentiment
           r = vader_sentiment('This product is amazing!')
-          assert r['label'] == 'Positive', f'Expected Positive, got {r[\"label\"]}'
-          print('✅ NLP engine:', r['label'])
-          "
+          assert r['label'] == 'Positive', f"Expected Positive, got {r['label']}"
+          print(f"✅ NLP engine: {r['label']} (compound={r['compound']})")
+          EOF
 
-      - name: Smoke test — FastAPI app
+      - name: Smoke test — FastAPI app loads
         run: |
-          python -c "
+          python - <<'EOF'
           from main import app
-          assert app.title == 'InsightPulse API'
-          print('✅ FastAPI app loads OK')
-          "
+          assert app.title == 'InsightPulse API', f"Wrong title: {app.title}"
+          assert len(app.routes) > 5, f"Too few routes: {len(app.routes)}"
+          print(f"✅ FastAPI app loads OK — {len(app.routes)} routes registered")
+          EOF
 
-      - name: Smoke test — Health endpoint (dry)
+      - name: Smoke test — health endpoint (httpx)
         run: |
-          python -c "
+          python - <<'EOF'
           import asyncio
           from httpx import AsyncClient, ASGITransport
           from main import app
 
-          async def test():
-              async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as c:
-                  r = await c.get('/api/health')
-                  assert r.status_code == 200
+          async def run():
+              async with AsyncClient(
+                  transport=ASGITransport(app=app),
+                  base_url='http://testserver'
+              ) as client:
+                  r = await client.get('/api/health')
+                  assert r.status_code == 200, f"Expected 200, got {r.status_code}"
                   data = r.json()
-                  assert data['status'] == 'healthy'
-                  print('✅ /api/health:', data)
+                  assert data['status'] == 'healthy', f"Expected healthy, got {data}"
+                  print(f"✅ /api/health: {data['status']}")
 
-          asyncio.run(test())
-          " || echo "ℹ️  httpx not available — skipping endpoint test"
+          asyncio.run(run())
+          EOF
+
+      - name: Smoke test — upload info endpoint
+        run: |
+          python - <<'EOF'
+          import asyncio
+          from httpx import AsyncClient, ASGITransport
+          from main import app
+
+          async def run():
+              async with AsyncClient(
+                  transport=ASGITransport(app=app),
+                  base_url='http://testserver'
+              ) as client:
+                  r = await client.get('/api/upload/info?filename=test.csv')
+                  assert r.status_code == 200, f"Expected 200, got {r.status_code}"
+                  data = r.json()
+                  assert data['allowed'] is True, f"CSV should be allowed: {data}"
+                  print(f"✅ /api/upload/info: allowed={data['allowed']}")
+
+          asyncio.run(run())
+          EOF
